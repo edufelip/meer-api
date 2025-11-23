@@ -32,7 +32,7 @@ Location: `springboot/`
   - Defaults: if no env is set, the app boots with in-memory H2 under profile `local`; Postgres URLs are built from the DB vars for other profiles. Security toggles: `SECURITY_REQUIRE_APP_HEADER`, `SECURITY_REQUIRE_APP_CHECK`, `SECURITY_DISABLE_AUTH`.
   - Profiles: `default` (cloud/dev), `local-db` (local Postgres), `prod` (production), `local` (H2 sandbox). Set via `SPRING_PROFILES_ACTIVE`.
 - Run
-  - `cd springboot && ./run-local.sh` — loads `.env` if present; starts API with `SPRING_PROFILES_ACTIVE` (default `default`).
+  - `cd springboot && ./run-local.sh` — loads `.env` if present; starts API with `SPRING_PROFILES_ACTIVE` defaulting to `prod` (remote Postgres).
   - `SPRING_PROFILES_ACTIVE=local-db ./gradlew bootRun` — run against local Postgres.
   - `SPRING_PROFILES_ACTIVE=local ./gradlew bootRun` — in-memory H2 sandbox.
   - `SPRING_PROFILES_ACTIVE=prod ./gradlew bootRun` — production settings (provide prod DB vars).
@@ -44,6 +44,7 @@ Location: `springboot/`
   - Firebase App Check header: `X-Firebase-AppCheck` required when `SECURITY_REQUIRE_APP_CHECK=true` and `SECURITY_DISABLE_AUTH=false`.
   - Firebase Auth: `Authorization: Bearer <idToken>` required unless `SECURITY_DISABLE_AUTH=true` (verification stubbed; plug in Firebase Admin when credentials are set).
   - Flags: `SECURITY_REQUIRE_APP_HEADER`, `SECURITY_REQUIRE_APP_CHECK`, `SECURITY_DISABLE_AUTH` (all wired in `springboot/src/main/resources/application.yml`).
+  - API auth: `/auth/signup` (name, email, password), `/auth/login` (email, password), `/auth/google` (provider,idToken,client) return JWT `token` + `refreshToken` and user info; `/auth/me` validates access tokens; `/auth/refresh` takes `refreshToken` and returns a new access token (and rotated refresh). Invalid/expired tokens return 401 with `{ "message": "Invalid or expired token" }`; invalid refresh tokens return 401 with `{ "message": "Invalid refresh token" }`. Set `GOOGLE_ANDROID_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, and `GOOGLE_WEB_CLIENT_ID` for Google login audience validation.
 
 ## Uploads
 - Multipart endpoints (placeholder implementations) accept `.png` up to ~300KB (wire storage as needed):
