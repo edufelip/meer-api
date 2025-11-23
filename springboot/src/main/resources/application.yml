@@ -11,6 +11,14 @@ security:
   requireAppHeader: ${SECURITY_REQUIRE_APP_HEADER:true}
   requireAppCheck: ${SECURITY_REQUIRE_APP_CHECK:true}
   disableAuth: ${SECURITY_DISABLE_AUTH:false}
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:change-me-please-change-me-please-change-me}
+    accessTtlMinutes: ${SECURITY_JWT_ACCESS_TTL_MINUTES:60}
+    refreshTtlDays: ${SECURITY_JWT_REFRESH_TTL_DAYS:7}
+  google:
+    androidClientId: ${GOOGLE_ANDROID_CLIENT_ID:}
+    iosClientId: ${GOOGLE_IOS_CLIENT_ID:}
+    webClientId: ${GOOGLE_WEB_CLIENT_ID:}
 
 ---
 # Default profile: cloud/dev Postgres
@@ -19,9 +27,9 @@ spring:
     activate:
       on-profile: default
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:meer}}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:meer_prod}}
+    username: ${DB_USER:meer_prod_user}
+    password: ${DB_PASSWORD:change-me}
     driver-class-name: org.postgresql.Driver
 
 ---
@@ -32,8 +40,8 @@ spring:
       on-profile: local-db
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DEVDB_NAME:meer_dev}}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    username: ${DB_USER:meer_dev_user}
+    password: ${DB_PASSWORD:change-me-dev}
     driver-class-name: org.postgresql.Driver
 
 ---

@@ -10,7 +10,9 @@ import com.edufelip.meer.core.content.GuideContent
 import com.edufelip.meer.core.store.ThriftStore
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface AuthUserRepository : JpaRepository<AuthUser, AuthUserId>
+interface AuthUserRepository : JpaRepository<AuthUser, AuthUserId> {
+    fun findByEmail(email: String): AuthUser?
+}
 
 interface CategoryRepository : JpaRepository<Category, CategoryId>
 
