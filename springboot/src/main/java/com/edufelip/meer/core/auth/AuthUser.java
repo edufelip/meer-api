@@ -1,13 +1,10 @@
 package com.edufelip.meer.core.auth;
 
 import com.edufelip.meer.core.store.ThriftStore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 public class AuthUser {
@@ -36,6 +33,14 @@ public class AuthUser {
     @JoinColumn(name = "owned_thrift_store_id")
     private ThriftStore ownedThriftStore;
 
+    @ManyToMany
+    @JoinTable(
+            name = "auth_user_favorites",
+            joinColumns = @JoinColumn(name = "auth_user_id"),
+            inverseJoinColumns = @JoinColumn(name = "thrift_store_id")
+    )
+    private Set<ThriftStore> favorites = new HashSet<>();
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -62,6 +67,7 @@ public class AuthUser {
     public boolean isNotifyPromos() { return notifyPromos; }
     public ThriftStore getOwnedThriftStore() { return ownedThriftStore; }
     public String getPasswordHash() { return passwordHash; }
+    public Set<ThriftStore> getFavorites() { return favorites; }
 
     public void setId(Integer id) { this.id = id; }
     public void setEmail(String email) { this.email = email; }
@@ -72,4 +78,5 @@ public class AuthUser {
     public void setNotifyPromos(boolean notifyPromos) { this.notifyPromos = notifyPromos; }
     public void setOwnedThriftStore(ThriftStore ownedThriftStore) { this.ownedThriftStore = ownedThriftStore; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public void setFavorites(Set<ThriftStore> favorites) { this.favorites = favorites; }
 }

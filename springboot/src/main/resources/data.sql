@@ -1,10 +1,10 @@
-INSERT INTO category (id, name, image_res_id) VALUES
- ('casa', 'Brechó de Casa', 'brecho-categories-house'),
- ('masculino', 'Brechó Masculino', 'categories-masculino'),
- ('feminino', 'Brechó Feminino', 'categories-feminino'),
- ('infantil', 'Brechó Infantil', 'categories-infantil'),
- ('luxo', 'Brechó de Luxo', 'categories-luxo'),
- ('designer', 'Brechó de Designer', 'categories-designer'),
- ('desapego', 'Brechó de Desapego', 'categories-desapego'),
- ('geral', 'Brechós Gerais', 'categories-geral')
+INSERT INTO category (id, name_string_id, image_res_id) VALUES
+ ('casa', 'brecho_de_casa', 'brecho-categories-house'),
+ ('masculino', 'brecho_masculino', 'categories-masculino'),
+ ('feminino', 'brecho_feminino', 'categories-feminino'),
+ ('infantil', 'brecho_infantil', 'categories-infantil'),
+ ('luxo', 'brecho_de_luxo', 'categories-luxo'),
+ ('designer', 'brecho_de_designer', 'categories-designer'),
+ ('desapego', 'brecho_de_desapego', 'categories-desapego'),
+ ('geral', 'brechos_gerais', 'categories-geral')
 ON CONFLICT (id) DO NOTHING;

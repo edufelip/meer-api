@@ -12,25 +12,25 @@ public class Category {
     @Column(length = 64, nullable = false, updatable = false)
     private String id;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(name = "name_string_id", nullable = false, unique = true)
+    private String nameStringId;
 
     @Column(name = "image_res_id", nullable = false)
     private String imageResId;
 
     public Category() {}
 
-    public Category(String id, String name, String imageResId) {
+    public Category(String id, String nameStringId, String imageResId) {
         this.id = id;
-        this.name = name;
+        this.nameStringId = nameStringId;
         this.imageResId = imageResId;
     }
 
     public String getId() { return id; }
-    public String getName() { return name; }
+    public String getNameStringId() { return nameStringId; }
     public String getImageResId() { return imageResId; }
 
     public void setId(String id) { this.id = id; }
-    public void setName(String name) { this.name = name; }
+    public void setNameStringId(String nameStringId) { this.nameStringId = nameStringId; }
     public void setImageResId(String imageResId) { this.imageResId = imageResId; }
 }
