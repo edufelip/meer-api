@@ -13,7 +13,7 @@ import java.util.List;
 
 public class Mappers {
     public static CategoryDto toDto(Category category) {
-        return new CategoryDto(category.getId(), category.getName(), category.getImageResId());
+        return new CategoryDto(category.getId(), category.getNameStringId(), category.getImageResId());
     }
 
     public static GuideContentDto toDto(GuideContent content) {
@@ -28,6 +28,10 @@ public class Mappers {
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents) {
+        return toDto(store, includeContents, store.getIsFavorite());
+    }
+
+    public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride) {
         List<GuideContentDto> contentsDto = includeContents && store.getContents() != null
                 ? store.getContents().stream().map(Mappers::toDto).toList()
                 : null;
@@ -52,7 +56,7 @@ public class Mappers {
                 store.getWalkTimeMinutes(),
                 store.getNeighborhood(),
                 store.getBadgeLabel(),
-                store.getIsFavorite(),
+                isFavoriteOverride,
                 store.getDescription(),
                 contentsDto
         );

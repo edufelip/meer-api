@@ -33,20 +33,20 @@ public class CategorySeeder implements CommandLineRunner {
         }
 
         List<Category> seeds = List.of(
-                new Category("casa", "Brechó de Casa", "brecho-categories-house"),
-                new Category("masculino", "Brechó Masculino", "categories-masculino"),
-                new Category("feminino", "Brechó Feminino", "categories-feminino"),
-                new Category("infantil", "Brechó Infantil", "categories-infantil"),
-                new Category("luxo", "Brechó de Luxo", "categories-luxo"),
-                new Category("designer", "Brechó de Designer", "categories-designer"),
-                new Category("desapego", "Brechó de Desapego", "categories-desapego"),
-                new Category("geral", "Brechós Gerais", "categories-geral")
+                new Category("casa", "brecho_de_casa", "brecho-categories-house"),
+                new Category("masculino", "brecho_masculino", "categories-masculino"),
+                new Category("feminino", "brecho_feminino", "categories-feminino"),
+                new Category("infantil", "brecho_infantil", "categories-infantil"),
+                new Category("luxo", "brecho_de_luxo", "categories-luxo"),
+                new Category("designer", "brecho_de_designer", "categories-designer"),
+                new Category("desapego", "brecho_de_desapego", "categories-desapego"),
+                new Category("geral", "brechos_gerais", "categories-geral")
         );
 
         seeds.forEach(seed -> categoryRepository.findById(seed.getId())
                 .map(existing -> {
-                    if (!existing.getName().equals(seed.getName()) || !existing.getImageResId().equals(seed.getImageResId())) {
-                        existing.setName(seed.getName());
+                    if (!existing.getNameStringId().equals(seed.getNameStringId()) || !existing.getImageResId().equals(seed.getImageResId())) {
+                        existing.setNameStringId(seed.getNameStringId());
                         existing.setImageResId(seed.getImageResId());
                         return categoryRepository.save(existing);
                     }
