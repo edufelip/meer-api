@@ -19,6 +19,8 @@ public record ThriftStoreDto(
         String website,
         String whatsapp,
         List<String> categories,
+        Double rating,
+        Integer reviewCount,
         Double distanceKm,
         Integer walkTimeMinutes,
         String neighborhood,

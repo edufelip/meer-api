@@ -19,6 +19,9 @@ public class GuideContent {
     private String categoryLabel;
 
     @Column(nullable = false)
+    private String type;
+
+    @Column(nullable = false)
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -27,11 +30,12 @@ public class GuideContent {
 
     public GuideContent() {}
 
-    public GuideContent(Integer id, String title, String description, String categoryLabel, String imageUrl, ThriftStore thriftStore) {
+    public GuideContent(Integer id, String title, String description, String categoryLabel, String type, String imageUrl, ThriftStore thriftStore) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.categoryLabel = categoryLabel;
+        this.type = type;
         this.imageUrl = imageUrl;
         this.thriftStore = thriftStore;
     }
@@ -40,6 +44,7 @@ public class GuideContent {
     public String getTitle() { return title; }
     public String getDescription() { return description; }
     public String getCategoryLabel() { return categoryLabel; }
+    public String getType() { return type; }
     public String getImageUrl() { return imageUrl; }
     public ThriftStore getThriftStore() { return thriftStore; }
 
@@ -47,6 +52,7 @@ public class GuideContent {
     public void setTitle(String title) { this.title = title; }
     public void setDescription(String description) { this.description = description; }
     public void setCategoryLabel(String categoryLabel) { this.categoryLabel = categoryLabel; }
+    public void setType(String type) { this.type = type; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setThriftStore(ThriftStore thriftStore) { this.thriftStore = thriftStore; }
 }

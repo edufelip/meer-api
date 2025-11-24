@@ -3,6 +3,8 @@ package com.edufelip.meer.domain;
 import com.edufelip.meer.core.content.GuideContent;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 
+import java.util.List;
+
 public class GetGuideContentUseCase {
     private final GuideContentRepository guideContentRepository;
 
@@ -12,5 +14,9 @@ public class GetGuideContentUseCase {
 
     public GuideContent execute(Integer id) {
         return guideContentRepository.findById(id).orElse(null);
+    }
+
+    public List<GuideContent> executeAll() {
+        return guideContentRepository.findAll();
     }
 }
