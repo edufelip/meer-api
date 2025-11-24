@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface StoreFeedbackRepository extends JpaRepository<StoreFeedback, Integer> {
     Optional<StoreFeedback> findByUserIdAndThriftStoreId(Integer userId, Integer storeId);
+    void deleteByUserId(Integer userId);
 
     interface AggregateView {
         Integer getStoreId();
