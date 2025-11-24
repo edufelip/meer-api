@@ -74,7 +74,9 @@ public class ThriftStoreController {
             @RequestParam(name = "categoryId", required = false) String categoryId,
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-            @RequestHeader("Authorization") String authHeader
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(name = "lat", required = false) Double lat,
+            @RequestParam(name = "lng", required = false) Double lng
     ) {
         if (page < 1 || pageSize < 1 || pageSize > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
@@ -86,9 +88,16 @@ public class ThriftStoreController {
         boolean hasNext;
 
         if ("nearby".equalsIgnoreCase(type)) {
-            var result = getThriftStoresUseCase.executePaged(page - 1, pageSize);
-            storesPage = result.getContent();
-            hasNext = result.hasNext();
+            var all = getThriftStoresUseCase.execute();
+            var sorted = sortByDistanceIfPossible(all, lat, lng);
+            int from = (page - 1) * pageSize;
+            int to = Math.min(sorted.size(), from + pageSize);
+            hasNext = to < sorted.size();
+            if (from > sorted.size()) {
+                storesPage = List.of();
+            } else {
+                storesPage = sorted.subList(from, to);
+            }
         }
         else if (categoryId != null) {
             if (categoryRepository.findById(categoryId).isEmpty()) {
@@ -176,5 +185,24 @@ public class ThriftStoreController {
     private com.edufelip.meer.core.auth.AuthUser currentUser(String authHeader) {
         Integer userId = extractUserId(authHeader);
         return authUserRepository.findById(userId).orElseThrow(InvalidTokenException::new);
+    }
+
+    private List<ThriftStore> sortByDistanceIfPossible(List<ThriftStore> stores, Double lat, Double lng) {
+        if (lat == null || lng == null) return stores;
+        return stores.stream()
+                .sorted(java.util.Comparator.comparingDouble(s -> distanceKm(lat, lng, s.getLatitude(), s.getLongitude())))
+                .toList();
+    }
+
+    private double distanceKm(double lat1, double lon1, Double lat2, Double lon2) {
+        if (lat2 == null || lon2 == null) return Double.MAX_VALUE;
+        double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

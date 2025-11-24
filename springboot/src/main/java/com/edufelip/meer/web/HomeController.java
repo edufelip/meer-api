@@ -4,7 +4,8 @@ import com.edufelip.meer.domain.GetGuideContentsByThriftStoreUseCase;
 import com.edufelip.meer.domain.GetGuideContentUseCase;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
-import com.edufelip.meer.dto.HomeResponseDto;
+import com.edufelip.meer.dto.PageResponse;
+import com.edufelip.meer.dto.ThriftStoreDto;
 import com.edufelip.meer.mapper.Mappers;
 import com.edufelip.meer.service.StoreFeedbackService;
 import com.edufelip.meer.security.token.InvalidTokenException;
@@ -12,10 +13,12 @@ import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Comparator;
 
 @RestController
 public class HomeController {
@@ -39,14 +42,27 @@ public class HomeController {
     }
 
     @GetMapping("/home")
-    public HomeResponseDto home(@RequestHeader("Authorization") String authHeader) {
+    public PageResponse<ThriftStoreDto> home(@RequestHeader("Authorization") String authHeader,
+                                             @RequestParam(name = "lat", required = false) Double lat,
+                                             @RequestParam(name = "lng", required = false) Double lng,
+                                             @RequestParam(name = "page", defaultValue = "1") int page,
+                                             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
         var user = currentUser(authHeader);
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
         Set<Integer> favoriteIds = user.getFavorites().stream().map(f -> f.getId()).collect(java.util.stream.Collectors.toSet());
 
         var stores = getThriftStoresUseCase.execute();
         var summaries = storeFeedbackService.getSummaries(stores.stream().map(s -> s.getId()).toList());
-        var featured = stores.stream()
-                .limit(10)
+        var sorted = sortByDistanceIfPossible(stores, lat, lng);
+        int from = (page - 1) * pageSize;
+        int to = Math.min(sorted.size(), from + pageSize);
+        boolean hasNext = to < sorted.size();
+        if (from > sorted.size()) {
+            return new PageResponse<>(List.of(), page, false);
+        }
+        var pageItems = sorted.subList(from, to).stream()
                 .map(s -> {
                     var summary = summaries.get(s.getId());
                     Double rating = summary != null ? summary.rating() : null;
@@ -54,18 +70,27 @@ public class HomeController {
                     return Mappers.toDto(s, false, favoriteIds.contains(s.getId()), rating, reviewCount);
                 })
                 .toList();
-        var nearby = stores.stream()
-                .limit(10)
-                .map(s -> {
-                    var summary = summaries.get(s.getId());
-                    Double rating = summary != null ? summary.rating() : null;
-                    Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
-                    return Mappers.toDto(s, false, favoriteIds.contains(s.getId()), rating, reviewCount);
-                })
-                .toList();
-        var content = getGuideContentUseCase.executeAll().stream().map(Mappers::toDto).toList();
+        return new PageResponse<>(pageItems, page, hasNext);
+    }
 
-        return new HomeResponseDto(featured, nearby, content);
+    private List<com.edufelip.meer.core.store.ThriftStore> sortByDistanceIfPossible(List<com.edufelip.meer.core.store.ThriftStore> stores, Double lat, Double lng) {
+        if (lat == null || lng == null) return stores;
+        return stores.stream()
+                .sorted(Comparator.comparingDouble(s -> distanceKm(lat, lng, s.getLatitude(), s.getLongitude())))
+                .toList();
+    }
+
+    // Haversine
+    private double distanceKm(double lat1, double lon1, Double lat2, Double lon2) {
+        if (lat2 == null || lon2 == null) return Double.MAX_VALUE;
+        double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     private com.edufelip.meer.core.auth.AuthUser currentUser(String authHeader) {
