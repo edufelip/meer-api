@@ -15,6 +15,7 @@ public class RefreshTokenUseCase {
     }
 
     public AuthResult execute(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) throw new InvalidRefreshTokenException();
         TokenPayload payload;
         try {
             payload = tokenProvider.parseRefreshToken(refreshToken);
