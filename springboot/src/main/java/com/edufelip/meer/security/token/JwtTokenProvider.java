@@ -41,6 +41,8 @@ public class JwtTokenProvider implements TokenProvider {
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .claim("type", "refresh")
+                .claim("email", user.getEmail())
+                .claim("name", user.getDisplayName())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(key, SignatureAlgorithm.HS256)
