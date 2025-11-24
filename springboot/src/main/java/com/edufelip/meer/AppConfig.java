@@ -8,10 +8,12 @@ import com.edufelip.meer.domain.GetThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.auth.AppleLoginUseCase;
 import com.edufelip.meer.domain.auth.ForgotPasswordUseCase;
+import com.edufelip.meer.domain.auth.GetProfileUseCase;
 import com.edufelip.meer.domain.auth.GoogleLoginUseCase;
 import com.edufelip.meer.domain.auth.LoginUseCase;
 import com.edufelip.meer.domain.auth.RefreshTokenUseCase;
 import com.edufelip.meer.domain.auth.SignupUseCase;
+import com.edufelip.meer.domain.auth.UpdateProfileUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
@@ -79,6 +81,16 @@ public class AppConfig {
     @Bean
     public ForgotPasswordUseCase forgotPasswordUseCase(AuthUserRepository repo) {
         return new ForgotPasswordUseCase(repo);
+    }
+
+    @Bean
+    public GetProfileUseCase getProfileUseCase(TokenProvider tokenProvider, AuthUserRepository repo) {
+        return new GetProfileUseCase(tokenProvider, repo);
+    }
+
+    @Bean
+    public UpdateProfileUseCase updateProfileUseCase(TokenProvider tokenProvider, AuthUserRepository repo) {
+        return new UpdateProfileUseCase(tokenProvider, repo);
     }
 
     @Bean
