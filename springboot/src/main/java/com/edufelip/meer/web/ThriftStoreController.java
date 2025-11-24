@@ -121,7 +121,10 @@ public class ThriftStoreController {
                     Double rating = summary != null ? summary.rating() : null;
                     Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
                     boolean isFav = favorites.stream().anyMatch(f -> f.getId().equals(store.getId()));
-                    return Mappers.toDto(store, false, isFav, rating, reviewCount);
+                    Double distanceMeters = (lat != null && lng != null && store.getLatitude() != null && store.getLongitude() != null)
+                            ? distanceKm(lat, lng, store.getLatitude(), store.getLongitude()) * 1000
+                            : null;
+                    return Mappers.toDto(store, false, isFav, rating, reviewCount, distanceMeters);
                 })
                 .toList();
         return new PageResponse<>(items, page, hasNext);
@@ -136,7 +139,7 @@ public class ThriftStoreController {
         Double rating = summary != null ? summary.rating() : null;
         Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
         boolean isFav = user.getFavorites().stream().anyMatch(f -> f.getId().equals(store.getId()));
-        return Mappers.toDto(store, true, isFav, rating, reviewCount);
+        return Mappers.toDto(store, true, isFav, rating, reviewCount, null);
     }
 
     @PostMapping
