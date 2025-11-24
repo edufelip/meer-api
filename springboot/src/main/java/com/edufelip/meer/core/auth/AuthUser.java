@@ -1,6 +1,13 @@
 package com.edufelip.meer.core.auth;
 
-import jakarta.persistence.*;
+import com.edufelip.meer.core.store.ThriftStore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 
 @Entity
 public class AuthUser {
@@ -8,12 +15,26 @@ public class AuthUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String displayName;
 
     private String photoUrl;
+
+    @Column(length = 1000)
+    private String bio;
+
+    @Column(nullable = false)
+    private boolean notifyNewStores = true;
+
+    @Column(nullable = false)
+    private boolean notifyPromos = true;
+
+    @OneToOne
+    @JoinColumn(name = "owned_thrift_store_id")
+    private ThriftStore ownedThriftStore;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
@@ -36,11 +57,19 @@ public class AuthUser {
     public String getEmail() { return email; }
     public String getDisplayName() { return displayName; }
     public String getPhotoUrl() { return photoUrl; }
+    public String getBio() { return bio; }
+    public boolean isNotifyNewStores() { return notifyNewStores; }
+    public boolean isNotifyPromos() { return notifyPromos; }
+    public ThriftStore getOwnedThriftStore() { return ownedThriftStore; }
     public String getPasswordHash() { return passwordHash; }
 
     public void setId(Integer id) { this.id = id; }
     public void setEmail(String email) { this.email = email; }
     public void setDisplayName(String displayName) { this.displayName = displayName; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+    public void setBio(String bio) { this.bio = bio; }
+    public void setNotifyNewStores(boolean notifyNewStores) { this.notifyNewStores = notifyNewStores; }
+    public void setNotifyPromos(boolean notifyPromos) { this.notifyPromos = notifyPromos; }
+    public void setOwnedThriftStore(ThriftStore ownedThriftStore) { this.ownedThriftStore = ownedThriftStore; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }
