@@ -11,4 +11,13 @@ public interface ThriftStoreRepository extends JpaRepository<ThriftStore, Intege
 
     @Query("select t from ThriftStore t where :categoryId in elements(t.categories)")
     Page<ThriftStore> findByCategoryId(@Param("categoryId") String categoryId, Pageable pageable);
+
+    @Query("""
+        select t from ThriftStore t
+        where lower(t.name) like lower(concat('%', :q, '%'))
+           or lower(t.tagline) like lower(concat('%', :q, '%'))
+           or lower(t.description) like lower(concat('%', :q, '%'))
+           or lower(t.neighborhood) like lower(concat('%', :q, '%'))
+        """)
+    Page<ThriftStore> search(@Param("q") String q, Pageable pageable);
 }

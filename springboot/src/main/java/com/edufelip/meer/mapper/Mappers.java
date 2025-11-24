@@ -29,14 +29,14 @@ public class Mappers {
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents) {
-        return toDto(store, includeContents, store.getIsFavorite(), null, null);
+        return toDto(store, includeContents, store.getIsFavorite(), null, null, null);
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride) {
-        return toDto(store, includeContents, isFavoriteOverride, null, null);
+        return toDto(store, includeContents, isFavoriteOverride, null, null, null);
     }
 
-    public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride, Double rating, Integer reviewCount) {
+    public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride, Double rating, Integer reviewCount, Double distanceMeters) {
         List<GuideContentDto> contentsDto = includeContents && store.getContents() != null
                 ? store.getContents().stream().map(Mappers::toDto).toList()
                 : null;
@@ -59,6 +59,7 @@ public class Mappers {
                 store.getCategories(),
                 rating,
                 reviewCount,
+                distanceMeters,
                 store.getDistanceKm(),
                 store.getWalkTimeMinutes(),
                 store.getNeighborhood(),

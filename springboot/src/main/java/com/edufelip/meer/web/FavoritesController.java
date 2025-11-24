@@ -54,7 +54,7 @@ public class FavoritesController {
                     var summary = summaries.get(store.getId());
                     Double rating = summary != null ? summary.rating() : null;
                     Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
-                    return Mappers.toDto(store, false, true, rating, reviewCount);
+                    return Mappers.toDto(store, false, true, rating, reviewCount, null);
                 })
                 .toList();
     }

@@ -67,7 +67,10 @@ public class HomeController {
                     var summary = summaries.get(s.getId());
                     Double rating = summary != null ? summary.rating() : null;
                     Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
-                    return Mappers.toDto(s, false, favoriteIds.contains(s.getId()), rating, reviewCount);
+                    Double distanceMeters = (lat != null && lng != null && s.getLatitude() != null && s.getLongitude() != null)
+                            ? distanceKm(lat, lng, s.getLatitude(), s.getLongitude()) * 1000
+                            : null;
+                    return Mappers.toDto(s, false, favoriteIds.contains(s.getId()), rating, reviewCount, distanceMeters);
                 })
                 .toList();
         return new PageResponse<>(pageItems, page, hasNext);
