@@ -6,6 +6,7 @@ import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.dto.FavoritesVersionDto;
 import com.edufelip.meer.dto.ThriftStoreDto;
 import com.edufelip.meer.mapper.Mappers;
+import com.edufelip.meer.service.StoreFeedbackService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
@@ -30,21 +31,31 @@ public class FavoritesController {
     private final TokenProvider tokenProvider;
     private final AuthUserRepository authUserRepository;
     private final ThriftStoreRepository thriftStoreRepository;
+    private final StoreFeedbackService storeFeedbackService;
 
     public FavoritesController(TokenProvider tokenProvider,
                                AuthUserRepository authUserRepository,
-                               ThriftStoreRepository thriftStoreRepository) {
+                               ThriftStoreRepository thriftStoreRepository,
+                               StoreFeedbackService storeFeedbackService) {
         this.tokenProvider = tokenProvider;
         this.authUserRepository = authUserRepository;
         this.thriftStoreRepository = thriftStoreRepository;
+        this.storeFeedbackService = storeFeedbackService;
     }
 
     @GetMapping
     public List<ThriftStoreDto> listFavorites(@RequestHeader("Authorization") String authHeader) {
         AuthUser user = currentUser(authHeader);
+        var ids = user.getFavorites().stream().map(f -> f.getId()).toList();
+        var summaries = storeFeedbackService.getSummaries(ids);
         return user.getFavorites()
                 .stream()
-                .map(store -> Mappers.toDto(store, false, true))
+                .map(store -> {
+                    var summary = summaries.get(store.getId());
+                    Double rating = summary != null ? summary.rating() : null;
+                    Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
+                    return Mappers.toDto(store, false, true, rating, reviewCount);
+                })
                 .toList();
     }
 

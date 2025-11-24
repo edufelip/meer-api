@@ -13,6 +13,7 @@ import com.edufelip.meer.dto.GuideContentDto;
 import com.edufelip.meer.dto.PageResponse;
 import com.edufelip.meer.dto.ThriftStoreDto;
 import com.edufelip.meer.mapper.Mappers;
+import com.edufelip.meer.service.StoreFeedbackService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
@@ -43,6 +44,7 @@ public class ThriftStoreController {
     private final CategoryRepository categoryRepository;
     private final com.edufelip.meer.domain.repo.AuthUserRepository authUserRepository;
     private final TokenProvider tokenProvider;
+    private final StoreFeedbackService storeFeedbackService;
 
     public ThriftStoreController(GetThriftStoreUseCase getThriftStoreUseCase,
                                  GetThriftStoresUseCase getThriftStoresUseCase,
@@ -52,7 +54,8 @@ public class ThriftStoreController {
                                  ThriftStoreRepository thriftStoreRepository,
                                  CategoryRepository categoryRepository,
                                  com.edufelip.meer.domain.repo.AuthUserRepository authUserRepository,
-                                 TokenProvider tokenProvider) {
+                                 TokenProvider tokenProvider,
+                                 StoreFeedbackService storeFeedbackService) {
         this.getThriftStoreUseCase = getThriftStoreUseCase;
         this.getThriftStoresUseCase = getThriftStoresUseCase;
         this.createThriftStoreUseCase = createThriftStoreUseCase;
@@ -62,34 +65,69 @@ public class ThriftStoreController {
         this.categoryRepository = categoryRepository;
         this.authUserRepository = authUserRepository;
         this.tokenProvider = tokenProvider;
+        this.storeFeedbackService = storeFeedbackService;
     }
 
     @GetMapping
-    public List<ThriftStoreDto> getAll() {
-        return getThriftStoresUseCase.execute().stream().map(store -> Mappers.toDto(store, false)).toList();
-    }
+    public PageResponse<ThriftStoreDto> getStores(
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "categoryId", required = false) String categoryId,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
+        var user = currentUser(authHeader);
+        var favorites = user.getFavorites();
+        var pageable = PageRequest.of(page - 1, pageSize);
+        java.util.List<ThriftStore> storesPage;
+        boolean hasNext;
 
-    @GetMapping("/featured")
-    public List<ThriftStoreDto> getFeatured() {
-        // Placeholder: return all for now; plug ranking logic here later
-        return getThriftStoresUseCase.execute().stream().map(store -> Mappers.toDto(store, false)).toList();
-    }
+        if ("nearby".equalsIgnoreCase(type)) {
+            var result = getThriftStoresUseCase.executePaged(page - 1, pageSize);
+            storesPage = result.getContent();
+            hasNext = result.hasNext();
+        }
+        else if (categoryId != null) {
+            if (categoryRepository.findById(categoryId).isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
+            }
+            var result = thriftStoreRepository.findByCategoryId(categoryId, pageable);
+            storesPage = result.getContent();
+            hasNext = result.hasNext();
+        } else {
+            var result = getThriftStoresUseCase.executePaged(page - 1, pageSize);
+            storesPage = result.getContent();
+            hasNext = result.hasNext();
+        }
 
-    @GetMapping("/nearby")
-    public List<ThriftStoreDto> getNearby() {
-        // Placeholder: return all; attach geo-sorting when location data is provided
-        return getThriftStoresUseCase.execute().stream().map(store -> Mappers.toDto(store, false)).toList();
-    }
+        var ids = storesPage.stream().map(ThriftStore::getId).toList();
+        var summaries = storeFeedbackService.getSummaries(ids);
 
-    @GetMapping("/favorites")
-    public List<ThriftStoreDto> getFavorites() {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header required");
+        var items = storesPage.stream()
+                .map(store -> {
+                    var summary = summaries.get(store.getId());
+                    Double rating = summary != null ? summary.rating() : null;
+                    Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
+                    boolean isFav = favorites.stream().anyMatch(f -> f.getId().equals(store.getId()));
+                    return Mappers.toDto(store, false, isFav, rating, reviewCount);
+                })
+                .toList();
+        return new PageResponse<>(items, page, hasNext);
     }
 
     @GetMapping("/{id}")
-    public ThriftStoreDto getById(@PathVariable Integer id) {
+    public ThriftStoreDto getById(@PathVariable Integer id, @RequestHeader("Authorization") String authHeader) {
+        var user = currentUser(authHeader);
         var store = getThriftStoreUseCase.execute(id);
-        return store != null ? Mappers.toDto(store, true) : null;
+        if (store == null) return null;
+        var summary = storeFeedbackService.getSummaries(java.util.List.of(store.getId())).get(store.getId());
+        Double rating = summary != null ? summary.rating() : null;
+        Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
+        boolean isFav = user.getFavorites().stream().anyMatch(f -> f.getId().equals(store.getId()));
+        return Mappers.toDto(store, true, isFav, rating, reviewCount);
     }
 
     @PostMapping
@@ -105,46 +143,23 @@ public class ThriftStoreController {
     @PostMapping("/{storeId}/contents")
     public GuideContentDto createGuideContent(
             @PathVariable Integer storeId,
-            @RequestBody GuideContent guideContent
-    ) {
-        var thriftStore = thriftStoreRepository.findById(storeId).orElseThrow(() -> new RuntimeException("Thrift store not found"));
-        var contentWithStore = new GuideContent(guideContent.getId(), guideContent.getTitle(), guideContent.getDescription(), guideContent.getCategoryLabel(), guideContent.getImageUrl(), thriftStore);
-        return Mappers.toDto(createGuideContentUseCase.execute(contentWithStore));
-    }
-
-    @GetMapping(params = {"categoryId"})
-    public PageResponse<ThriftStoreDto> getStoresByCategory(
-            @RequestParam String categoryId,
-            @RequestParam(name = "page", defaultValue = "1") int page,
-            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
+            @RequestBody GuideContent guideContent,
             @RequestHeader("Authorization") String authHeader
     ) {
-        Integer userId = extractUserId(authHeader);
-        if (page < 1 || pageSize < 1 || pageSize > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
-        }
-        if (categoryRepository.findById(categoryId).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
-        }
-        var pageable = PageRequest.of(page - 1, pageSize);
-        var result = thriftStoreRepository.findByCategoryId(categoryId, pageable);
-        var user = authUserRepository.findById(userId).orElse(null);
-        java.util.Set<com.edufelip.meer.core.store.ThriftStore> favorites = user != null
-                ? user.getFavorites()
-                : java.util.Collections.emptySet();
-
-        var items = result.getContent().stream()
-                .map(store -> Mappers.toDto(store, false, favorites.stream().anyMatch(f -> f.getId().equals(store.getId()))))
-                .toList();
-        return new PageResponse<>(items, page, result.hasNext());
-    }
-
-    @GetMapping("/favorites")
-    public List<ThriftStoreDto> getUserFavorites(@RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
-        return user.getFavorites().stream()
-                .map(store -> Mappers.toDto(store, false, true))
-                .toList();
+        if (user.getOwnedThriftStore() == null || !user.getOwnedThriftStore().getId().equals(storeId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must own this store to add content");
+        }
+        var thriftStore = thriftStoreRepository.findById(storeId).orElseThrow(() -> new RuntimeException("Thrift store not found"));
+        var contentWithStore = new GuideContent(
+                guideContent.getId(),
+                guideContent.getTitle(),
+                guideContent.getDescription(),
+                guideContent.getCategoryLabel(),
+                guideContent.getType(),
+                guideContent.getImageUrl(),
+                thriftStore);
+        return Mappers.toDto(createGuideContentUseCase.execute(contentWithStore));
     }
 
     private Integer extractUserId(String authHeader) {

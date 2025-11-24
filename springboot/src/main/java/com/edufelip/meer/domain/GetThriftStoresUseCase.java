@@ -2,6 +2,9 @@ package com.edufelip.meer.domain;
 
 import com.edufelip.meer.core.store.ThriftStore;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 
 public class GetThriftStoresUseCase {
@@ -13,5 +16,9 @@ public class GetThriftStoresUseCase {
 
     public List<ThriftStore> execute() {
         return thriftStoreRepository.findAll();
+    }
+
+    public Page<ThriftStore> executePaged(int page, int pageSize) {
+        return thriftStoreRepository.findAll(PageRequest.of(page, pageSize));
     }
 }

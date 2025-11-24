@@ -22,16 +22,21 @@ public class Mappers {
                 content.getTitle(),
                 content.getDescription(),
                 content.getCategoryLabel(),
+                content.getType(),
                 content.getImageUrl(),
                 content.getThriftStore() != null ? content.getThriftStore().getId() : null
         );
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents) {
-        return toDto(store, includeContents, store.getIsFavorite());
+        return toDto(store, includeContents, store.getIsFavorite(), null, null);
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride) {
+        return toDto(store, includeContents, isFavoriteOverride, null, null);
+    }
+
+    public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride, Double rating, Integer reviewCount) {
         List<GuideContentDto> contentsDto = includeContents && store.getContents() != null
                 ? store.getContents().stream().map(Mappers::toDto).toList()
                 : null;
@@ -52,6 +57,8 @@ public class Mappers {
                 store.getSocial() != null ? store.getSocial().getWebsite() : null,
                 store.getSocial() != null ? store.getSocial().getWhatsapp() : null,
                 store.getCategories(),
+                rating,
+                reviewCount,
                 store.getDistanceKm(),
                 store.getWalkTimeMinutes(),
                 store.getNeighborhood(),
