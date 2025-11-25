@@ -2,6 +2,10 @@ package com.edufelip.meer.core.content;
 
 import com.edufelip.meer.core.store.ThriftStore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Instant;
 
 @Entity
 public class GuideContent {
@@ -28,6 +32,14 @@ public class GuideContent {
     @JoinColumn(name = "thrift_store_id")
     private ThriftStore thriftStore;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     public GuideContent() {}
 
     public GuideContent(Integer id, String title, String description, String categoryLabel, String type, String imageUrl, ThriftStore thriftStore) {
@@ -47,6 +59,8 @@ public class GuideContent {
     public String getType() { return type; }
     public String getImageUrl() { return imageUrl; }
     public ThriftStore getThriftStore() { return thriftStore; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
 
     public void setId(Integer id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
@@ -55,4 +69,6 @@ public class GuideContent {
     public void setType(String type) { this.type = type; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setThriftStore(ThriftStore thriftStore) { this.thriftStore = thriftStore; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }

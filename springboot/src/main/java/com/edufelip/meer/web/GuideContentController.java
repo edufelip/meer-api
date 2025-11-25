@@ -17,8 +17,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/contents")
@@ -37,6 +40,16 @@ public class GuideContentController {
         this.guideContentRepository = guideContentRepository;
         this.authUserRepository = authUserRepository;
         this.tokenProvider = tokenProvider;
+    }
+
+    @GetMapping("/top")
+    public List<GuideContentDto> top(@RequestHeader("Authorization") String authHeader,
+                                     @RequestParam(name = "limit", defaultValue = "10") int limit) {
+        currentUser(authHeader); // enforce auth
+        return getGuideContentUseCase.executeRecentTop10().stream()
+                .limit(limit)
+                .map(Mappers::toDto)
+                .toList();
     }
 
     @GetMapping("/{id}")

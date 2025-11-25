@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Set;
-import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @RestController
@@ -44,42 +43,28 @@ public class HomeController {
 
     @GetMapping("/home")
     public HomeResponse home(@RequestHeader("Authorization") String authHeader,
-                             @RequestParam(name = "lat", required = false) Double lat,
-                             @RequestParam(name = "lng", required = false) Double lng) {
+                             @RequestParam(name = "lat") double lat,
+                             @RequestParam(name = "lng") double lng) {
         var user = currentUser(authHeader);
         Set<Integer> favoriteIds = user.getFavorites().stream().map(f -> f.getId()).collect(Collectors.toSet());
 
-        var stores = getThriftStoresUseCase.execute();
-        var summaries = storeFeedbackService.getSummaries(stores.stream().map(s -> s.getId()).toList());
+        var featuredStores = getThriftStoresUseCase.executeRecentTop10();
+        var nearbyStores = getThriftStoresUseCase.executeNearby(lat, lng, 0, 10).getContent();
 
-        var featuredStores = stores.stream()
-                .filter(s -> s.getBadgeLabel() != null)
-                .limit(10)
-                .toList();
-        if (featuredStores.isEmpty()) {
-            featuredStores = stores.stream().limit(10).toList();
-        }
-
-        var nearbyStores = sortByDistanceIfPossible(stores, lat, lng).stream()
-                .limit(10)
-                .toList();
+        var summaries = storeFeedbackService.getSummaries(
+                java.util.stream.Stream.concat(featuredStores.stream(), nearbyStores.stream())
+                        .map(s -> s.getId())
+                        .distinct()
+                        .toList());
 
         var featuredDtos = featuredStores.stream().map(s -> toStoreDto(s, favoriteIds, summaries, lat, lng)).toList();
         var nearbyDtos = nearbyStores.stream().map(s -> toStoreDto(s, favoriteIds, summaries, lat, lng)).toList();
 
-        List<GuideContentDto> contentDtos = getGuideContentUseCase.executeAll().stream()
-                .limit(10)
+        List<GuideContentDto> contentDtos = getGuideContentUseCase.executeRecentTop10().stream()
                 .map(Mappers::toDto)
                 .toList();
 
         return new HomeResponse(featuredDtos, nearbyDtos, contentDtos);
-    }
-
-    private List<com.edufelip.meer.core.store.ThriftStore> sortByDistanceIfPossible(List<com.edufelip.meer.core.store.ThriftStore> stores, Double lat, Double lng) {
-        if (lat == null || lng == null) return stores;
-        return stores.stream()
-                .sorted(Comparator.comparingDouble(s -> distanceKm(lat, lng, s.getLatitude(), s.getLongitude())))
-                .toList();
     }
 
     // Haversine
