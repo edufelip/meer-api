@@ -3,6 +3,7 @@ package com.edufelip.meer.domain;
 import com.edufelip.meer.core.content.GuideContent;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
+import org.springframework.cache.annotation.CacheEvict;
 
 public class CreateGuideContentUseCase {
     private final GuideContentRepository guideContentRepository;
@@ -13,6 +14,7 @@ public class CreateGuideContentUseCase {
         this.thriftStoreRepository = thriftStoreRepository;
     }
 
+    @CacheEvict(cacheNames = "guideTop10", allEntries = true)
     public GuideContent execute(GuideContent guideContent) {
         if (guideContent.getThriftStore() != null && guideContent.getThriftStore().getId() != null) {
             var thrift = thriftStoreRepository.findById(guideContent.getThriftStore().getId())

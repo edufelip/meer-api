@@ -1,6 +1,7 @@
 package com.edufelip.meer.service;
 
 import com.edufelip.meer.domain.repo.StoreFeedbackRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,7 @@ public class StoreFeedbackService {
         return map;
     }
 
+    @CacheEvict(cacheNames = "storeRatings", allEntries = true)
     public com.edufelip.meer.core.store.StoreFeedback upsert(com.edufelip.meer.core.auth.AuthUser user,
                                                             com.edufelip.meer.core.store.ThriftStore store,
                                                             Integer score,
@@ -46,6 +48,7 @@ public class StoreFeedbackService {
         return repository.save(fb);
     }
 
+    @CacheEvict(cacheNames = "storeRatings", allEntries = true)
     public java.util.Optional<com.edufelip.meer.core.store.StoreFeedback> find(Integer userId, Integer storeId) {
         return repository.findByUserIdAndThriftStoreId(userId, storeId);
     }
