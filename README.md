@@ -13,9 +13,17 @@
   Java 17 Spring Boot REST API powering the Meer app.
 </p>
 
+## Tech Stack
+- Java 17, Spring Boot 4 (Web, Data JPA, Validation)
+- PostgreSQL (prod/dev) with optional PostGIS; H2 for local sandbox
+- Caffeine in-process caching (featured, guides, ratings)
+- JWT auth; App header/App Check guards in `RequestGuardsFilter`
+- Gradle wrapper for builds/tests
+
 ## Prerequisites
 - Java 17+ (set `JAVA_HOME`; Temurin 17 is known-good).
 - Gradle 8+ (use the bundled `./gradlew`).
+- Postgres 14+; PostGIS extension recommended for fastest nearby queries (GiST KNN).
 
 ## Clone
 ```
@@ -31,6 +39,7 @@ Location: `springboot/`
   - Google login: `GOOGLE_ANDROID_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_WEB_CLIENT_ID`.
   - Copy `springboot/.env.example` → `springboot/.env` and fill the values (never commit secrets).
   - Profiles: `default` (remote/cloud Postgres), `local-db` (dev Postgres), `prod` (production), `local` (H2 sandbox). Set via `SPRING_PROFILES_ACTIVE`.
+  - Caching: uses Caffeine (in-JVM). No Redis required. TTLs: featured/guides 10m, ratings 5m (see `caffeine-cache.properties`).
 - Run
   - `cd springboot && ./run-local.sh` — loads `.env`, defaults to `SPRING_PROFILES_ACTIVE=prod`; override with `SPRING_PROFILES_ACTIVE=local-db ./run-local.sh` to hit the dev DB.
   - `SPRING_PROFILES_ACTIVE=local-db ./gradlew :springboot:bootRun` — run from repo root.
@@ -55,6 +64,19 @@ Location: `springboot/`
 - DTOs & mappers: `springboot/src/main/java/com/edufelip/meer/dto/` and `springboot/src/main/java/com/edufelip/meer/mapper/`.
 - Config: `springboot/src/main/resources/application.yml`.
 
+### Core Endpoints (user flows)
+- `/home` — featured (top 10), nearby (lat/lng required), guide content top 10 in one payload.
+- `/featured` — featured stores only (cached 10m).
+- `/nearby?lat=…&lng=…&pageIndex=0&pageSize=10` — paginated nearby list (KNN: PostGIS geography when available; falls back to point/Haversine).
+- `/contents/top?limit=10` — recent guide content (cached 10m).
+- `/stores?type=nearby` — also uses paged nearby; requires lat/lng.
+- Auth: `/auth/login`, `/auth/signup`, `/auth/google`, `/auth/apple`, `/auth/refresh`, `/auth/forgot-password`.
+
+### Performance & Data
+- Spatial: PostGIS-enabled geography KNN query preferred; GiST index created at boot in `local-db` via `data-postgres.sql`. Falls back gracefully if PostGIS absent.
+- Caching: Caffeine per-node caches: `featuredTop10` (10m), `guideTop10` (10m), `storeRatings` (5m, lists ≤50 ids). Eviction is time-based; no Redis dependency.
+- Ratings aggregation: cached by store-id list; distances/favorites remain per-request.
+
 ## Code Map (Key Paths)
 - Auth flow: `web/AuthController.java`, use cases in `domain/auth/*`, token provider in `security/token/`.
 - Stores & content: `web/ThriftStoreController.java`, `domain/*ThriftStore*`, `domain/*GuideContent*`.
@@ -63,6 +85,7 @@ Location: `springboot/`
 
 ## Infrastructure Notes
 - Remote Postgres is the default; for the dev database set `SPRING_PROFILES_ACTIVE=local-db` and point `DB_*` to the dev instance.
+- PostGIS recommended: `CREATE EXTENSION IF NOT EXISTS postgis;` and KNN GiST index is auto-created from `data-postgres.sql` on boot in `local-db`.
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`; OpenAPI JSON at `/v3/api-docs`.
 
 ## Contributing
