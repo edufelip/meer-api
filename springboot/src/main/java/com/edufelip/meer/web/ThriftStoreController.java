@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Comparator;
 import java.util.stream.Collectors;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -110,18 +109,13 @@ public class ThriftStoreController {
         boolean hasNext;
 
         if ("nearby".equalsIgnoreCase(type)) {
-            var all = getThriftStoresUseCase.execute();
-            var sorted = sortByDistanceIfPossible(all, lat, lng);
-            int from = (page - 1) * pageSize;
-            int to = Math.min(sorted.size(), from + pageSize);
-            hasNext = to < sorted.size();
-            if (from > sorted.size()) {
-                storesPage = List.of();
-            } else {
-                storesPage = sorted.subList(from, to);
+            if (lat == null || lng == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "lat and lng are required for nearby search");
             }
-        }
-        else if (categoryId != null) {
+            var result = getThriftStoresUseCase.executeNearby(lat, lng, page - 1, pageSize);
+            storesPage = result.getContent();
+            hasNext = result.hasNext();
+        } else if (categoryId != null) {
             if (categoryRepository.findById(categoryId).isEmpty()) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
             }

@@ -4,6 +4,10 @@ import com.edufelip.meer.core.content.GuideContent;
 import jakarta.persistence.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.time.Instant;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 public class ThriftStore {
@@ -53,11 +57,20 @@ public class ThriftStore {
     @Column(length = 1000)
     private String description;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
     @OneToMany(mappedBy = "thriftStore", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GuideContent> contents;
 
     @OneToMany(mappedBy = "thriftStore", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC, id ASC")
+    @BatchSize(size = 25)
     private List<ThriftStorePhoto> photos = new ArrayList<>();
 
     public ThriftStore() {}
@@ -110,6 +123,8 @@ public class ThriftStore {
     public String getBadgeLabel() { return badgeLabel; }
     public Boolean getIsFavorite() { return isFavorite; }
     public String getDescription() { return description; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
     public List<GuideContent> getContents() { return contents; }
     public List<ThriftStorePhoto> getPhotos() { return photos; }
 
@@ -134,6 +149,8 @@ public class ThriftStore {
     public void setBadgeLabel(String badgeLabel) { this.badgeLabel = badgeLabel; }
     public void setIsFavorite(Boolean isFavorite) { this.isFavorite = isFavorite; }
     public void setDescription(String description) { this.description = description; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public void setContents(List<GuideContent> contents) { this.contents = contents; }
     public void setPhotos(List<ThriftStorePhoto> photos) { this.photos = photos; }
 }

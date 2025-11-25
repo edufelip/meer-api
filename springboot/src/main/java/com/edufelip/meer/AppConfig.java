@@ -39,7 +39,10 @@ public class AppConfig {
     public GetThriftStoreUseCase getThriftStoreUseCase(ThriftStoreRepository repo) { return new GetThriftStoreUseCase(repo); }
 
     @Bean
-    public GetThriftStoresUseCase getThriftStoresUseCase(ThriftStoreRepository repo) { return new GetThriftStoresUseCase(repo); }
+    public GetThriftStoresUseCase getThriftStoresUseCase(ThriftStoreRepository repo,
+                                                         @org.springframework.beans.factory.annotation.Value("${spring.datasource.url:}") String datasourceUrl) {
+        return new GetThriftStoresUseCase(repo, datasourceUrl);
+    }
 
     @Bean
     public CreateThriftStoreUseCase createThriftStoreUseCase(ThriftStoreRepository repo) { return new CreateThriftStoreUseCase(repo); }

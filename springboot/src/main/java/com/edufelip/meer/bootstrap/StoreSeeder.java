@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Instant;
 
 /**
  * Seeds a small catalog of stores for local development so /home and /stores have data.
@@ -27,8 +28,11 @@ public class StoreSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (storeRepo.count() > 0) return; // keep idempotent for dev restarts
 
-        seed(featureStores());
-        seed(nearbyStores());
+        var feature = featureStores();
+        var nearby = nearbyStores();
+        seed(feature);
+        seed(nearby);
+        seedContents(feature);
     }
 
     private void seed(List<ThriftStore> stores) {
@@ -206,6 +210,55 @@ public class StoreSeeder implements CommandLineRunner {
         s.setNeighborhood(neighborhood);
         s.setBadgeLabel(badgeLabel);
         s.setDescription(description);
+        Instant now = Instant.now();
+        s.setCreatedAt(now);
+        s.setUpdatedAt(now);
         return s;
+    }
+
+    private void seedContents(List<ThriftStore> featureStores) {
+        if (featureStores.isEmpty()) return;
+        ThriftStore ref = featureStores.get(0);
+        var contents = List.of(
+                new com.edufelip.meer.core.content.GuideContent(
+                        null,
+                        "Dicas para um garimpo de sucesso",
+                        "Aprenda a encontrar as melhores peças em brechós.",
+                        "Guia de estilo",
+                        "article",
+                        "https://lh3.googleusercontent.com/aida-public/AB6AXuASh-dosAr4TVNex49PUkBKFWcLJ5g7HOQJC7p6SaRZyNznaks3TiQuWOksGvrnYi6IeO5sMPBjaerUTI7HzO4xaF5jyAX9NkZS80VOX-lpdnJIHTDaM3nL8ANPzyy3T2OEPfbqu2cuQlC-_PdB_tFutmEey75ynvkAcO3CQis8asojk9mkENmn1Hg88uqHJEOxr2z8LyIELsQfsWo_vVdfdLbws8VFobNPLNE5cMP-Snp3CsMplvntxVg4BQTHBAk7pgXTv1Px3Ls",
+                        ref
+                ),
+                new com.edufelip.meer.core.content.GuideContent(
+                        null,
+                        "Tour pelo brechó: novidades da semana",
+                        "Veja os achados que chegaram nesta semana no nosso espaço.",
+                        "Vídeo",
+                        "video",
+                        "https://lh3.googleusercontent.com/aida-public/AB6AXuBmfZnwoz2FyAt09OQcXxSOWFu-nzy3A0N7Y8dSUZmyVxMgOCUCY3KYMJkp8VWQmVt_eEPzL69-jCYmwaqq52hdiViVNBeuOIy35QjmobKVUKmv0XujKAj04kCQYbEijnAQ84NSgvQ2618bew_ido3S_RsVHz9SiI3adBYqbWWILbs5CkJk5nZnxcQK4mTayuijLFbB_TIx3KsrW2ONKeAeFmq2bGqv-C1QFs-D3V9stPlgaG84Q31ythQGOQjNwpsW6FmOwIdo2us",
+                        ref
+                ),
+                new com.edufelip.meer.core.content.GuideContent(
+                        null,
+                        "Como cuidar das suas peças vintage",
+                        "Guia rápido para conservar tecidos delicados e couro antigo.",
+                        "Dica Rápida",
+                        "article",
+                        "https://lh3.googleusercontent.com/aida-public/AB6AXuBmfZnwoz2FyAt09OQcXxSOWFu-nzy3A0N7Y8dSUZmyVxMgOCUCY3KYMJkp8VWQmVt_eEPzL69-jCYmwaqq52hdiViVNBeuOIy35QjmobKVUKmv0XujKAj04kCQYbEijnAQ84NSgvQ2618bew_ido3S_RsVHz9SiI3adBYqbWWILbs5CkJk5nZnxcQK4mTayuijLFbB_TIx3KsrW2ONKeAeFmq2bGqv-C1QFs-D3V9stPlgaG84Q31ythQGOQjNwpsW6FmOwIdo2us",
+                        ref
+                ),
+                new com.edufelip.meer.core.content.GuideContent(
+                        null,
+                        "Look do dia com achados do brechó",
+                        "Inspire-se com combinações práticas para o cotidiano.",
+                        "Post",
+                        "post",
+                        "https://lh3.googleusercontent.com/aida-public/AB6AXuBmfZnwoz2FyAt09OQcXxSOWFu-nzy3A0N7Y8dSUZmyVxMgOCUCY3KYMJkp8VWQmVt_eEPzL69-jCYmwaqq52hdiViVNBeuOIy35QjmobKVUKmv0XujKAj04kCQYbEijnAQ84NSgvQ2618bew_ido3S_RsVHz9SiI3adBYqbWWILbs5CkJk5nZnxcQK4mTayuijLFbB_TIx3KsrW2ONKeAeFmq2bGqv-C1QFs-D3V9stPlgaG84Q31ythQGOQjNwpsW6FmOwIdo2us",
+                        ref
+                )
+        );
+        // attach and persist
+        ref.setContents(contents);
+        storeRepo.save(ref);
     }
 }

@@ -49,6 +49,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  sql:
+    init:
+      mode: always
+      platform: postgres
 
 ---
 # Production profile

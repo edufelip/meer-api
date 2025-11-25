@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface GuideContentRepository extends JpaRepository<GuideContent, Integer> {
     List<GuideContent> findByThriftStoreId(Integer thriftStoreId);
+    List<GuideContent> findTop10ByOrderByCreatedAtDesc();
 }

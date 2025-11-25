@@ -19,4 +19,8 @@ public class GetGuideContentUseCase {
     public List<GuideContent> executeAll() {
         return guideContentRepository.findAll();
     }
+
+    public List<GuideContent> executeRecentTop10() {
+        return guideContentRepository.findTop10ByOrderByCreatedAtDesc();
+    }
 }
