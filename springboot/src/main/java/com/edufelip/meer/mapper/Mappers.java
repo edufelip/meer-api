@@ -46,6 +46,8 @@ public class Mappers {
                 .map(p -> new StoreImageDto(p.getId(), p.getUrl(), p.getDisplayOrder(), p.getDisplayOrder() != null && p.getDisplayOrder() == 0))
                 .toList()
                 : List.of();
+        Integer derivedWalkMinutes = distanceMeters != null ? (int) Math.round(distanceMeters / 80.0) : null; // 80 m/min ≈ 4.8 km/h
+
         return new ThriftStoreDto(
                 store.getId(),
                 store.getName(),
@@ -55,7 +57,6 @@ public class Mappers {
                 store.getAddressLine(),
                 store.getLatitude(),
                 store.getLongitude(),
-                store.getMapImageUrl(),
                 store.getOpeningHours(),
                 store.getOpeningHoursNotes(),
                 store.getSocial() != null ? store.getSocial().getFacebook() : null,
@@ -66,8 +67,7 @@ public class Mappers {
                 rating,
                 reviewCount,
                 distanceMeters,
-                store.getDistanceKm(),
-                store.getWalkTimeMinutes(),
+                derivedWalkMinutes,
                 store.getNeighborhood(),
                 store.getBadgeLabel(),
                 isFavoriteOverride,

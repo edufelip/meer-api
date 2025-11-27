@@ -57,11 +57,43 @@ public class HomeController {
                         .distinct()
                         .toList());
 
-        var featuredDtos = featuredStores.stream().map(s -> toStoreDto(s, favoriteIds, summaries, lat, lng)).toList();
-        var nearbyDtos = nearbyStores.stream().map(s -> toStoreDto(s, favoriteIds, summaries, lat, lng)).toList();
+        var featuredDtos = featuredStores.stream()
+                .map(s -> new com.edufelip.meer.dto.FeaturedStoreDto(
+                        s.getId(),
+                        s.getName(),
+                        s.getPhotos() != null && !s.getPhotos().isEmpty() ? s.getPhotos().get(0).getUrl() : s.getCoverImageUrl()
+                ))
+                .toList();
+
+        var nearbyDtos = nearbyStores.stream().map(s -> {
+            var summary = summaries.get(s.getId());
+            Double rating = summary != null ? summary.rating() : null;
+            Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
+            Double distanceMeters = (s.getLatitude() != null && s.getLongitude() != null)
+                    ? distanceKm(lat, lng, s.getLatitude(), s.getLongitude()) * 1000
+                    : null;
+            Integer walkMinutes = distanceMeters != null ? (int) Math.round(distanceMeters / 80.0) : null;
+            return new com.edufelip.meer.dto.NearbyStoreDto(
+                    s.getId(),
+                    s.getName(),
+                    s.getDescription(),
+                    s.getPhotos() != null && !s.getPhotos().isEmpty() ? s.getPhotos().get(0).getUrl() : s.getCoverImageUrl(),
+                    s.getAddressLine(),
+                    s.getLatitude(),
+                    s.getLongitude(),
+                    s.getNeighborhood(),
+                    favoriteIds.contains(s.getId()),
+                    s.getCategories(),
+                    rating,
+                    reviewCount,
+                    distanceMeters,
+                    walkMinutes
+            );
+        }).toList();
 
         List<GuideContentDto> contentDtos = getGuideContentUseCase.executeRecentTop10().stream()
-                .map(Mappers::toDto)
+                .map(gc -> new GuideContentDto(gc.getId(), gc.getTitle(), gc.getDescription(), gc.getCategoryLabel(), gc.getType(), gc.getImageUrl(),
+                        gc.getThriftStore() != null ? gc.getThriftStore().getId() : null))
                 .toList();
 
         return new HomeResponse(featuredDtos, nearbyDtos, contentDtos);

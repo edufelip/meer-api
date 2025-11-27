@@ -12,63 +12,63 @@ ON CONFLICT (id) DO NOTHING;
 -- Seed thrift stores (dev preview data)
 INSERT INTO thrift_store (id, name, tagline, cover_image_url, address_line, latitude, longitude, map_image_url,
                           opening_hours, opening_hours_notes, facebook, instagram, website, whatsapp,
-                          distance_km, walk_time_minutes, neighborhood, badge_label, is_favorite, description)
+                          neighborhood, badge_label, is_favorite, description)
 VALUES
  (1, 'Vintage Vibes', 'Garimpos curados com pegada retrô',
-  'https://images.unsplash.com/photo-1441123694162-e54a981ceba3?auto=format&fit=crop&w=1600&q=80',
+  'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80',
   'Rua Augusta, 123 - Pinheiros', -23.5617, -46.6589,
   'https://lh3.googleusercontent.com/aida-public/AB6AXuATD7G9oKF2W1aQjxAqHpYvVPamBIvCIZ6Q7I74RHrH7zwrJHn7iFRGMdMEHWLTMlP9DQ7oquk7Frb_j9QaIiT7ZSYMjZJhvTjFAJU7U-X73PmboiSxOHwS4QZ9mIBO-fJWAbwbdWu5yfwTrXn0c6HHGRpI5fDlZ_HckG3G5-IAsF_Vsh98T6DdyXbPl0bdG-iC9J2bjl6tqGgQIoeItBfJUqcnWgrKl9Y05nEY0VjB15UkZf5t6v0xiO0VVOuXFpoAn1Z7WNfG-dc',
   'Seg a Sáb: 10:00 - 19:00', 'Fecha aos domingos', NULL, '@vintagevibes', NULL, NULL,
-  0.5, 5, 'Pinheiros', 'Mais amado', true, 'Peças icônicas dos anos 70 e 80, curadoria semanal.'),
+  'Pinheiros', 'Mais amado', true, 'Peças icônicas dos anos 70 e 80, curadoria semanal.'),
 
  (2, 'Secondhand Chic', 'Peças de grife em segunda mão',
-  'https://images.unsplash.com/photo-1542293787938-4d273c37c1b8?auto=format&fit=crop&w=1600&q=80',
+  'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1600&q=80',
   'Av. Paulista, 456 - Bela Vista', -23.5614, -46.6558,
   NULL,
-  'Seg a Sex: 11:00 - 18:00', NULL, NULL, '@secondhandchic', NULL, NULL,
-  1.2, 15, 'Vila Madalena', NULL, false, 'Grifes seminovas autenticadas e em ótimo estado.'),
+  'Seg a Sex: 11:00 - 18:00', NULL, NULL, '@secondhandchic', '@secondhandchic', NULL,
+  'Vila Madalena', NULL, false, 'Grifes seminovas autenticadas e em ótimo estado.'),
 
  (3, 'Thrift Haven', 'Achadinhos baratos e estilosos',
   'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=1600&q=80',
   'Rua 7 de Abril, 90 - Centro', -23.546, -46.638,
   NULL,
-  'Ter a Dom: 10:00 - 20:00', NULL, NULL, '@thrifthaven', NULL, NULL,
-  2.4, 28, 'Centro', NULL, false, 'Racks sempre renovados com preços acessíveis.'),
+  'Ter a Dom: 10:00 - 20:00', NULL, NULL, '@thrifthaven', '@thrifthaven', NULL,
+  'Centro', NULL, false, 'Racks sempre renovados com preços acessíveis.'),
 
  (4, 'Eco Trends', 'Slow fashion e peças eco-friendly',
   'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1600&q=80',
   'Alameda dos Maracatins, 300 - Moema', -23.6101, -46.6675,
   NULL,
-  'Seg a Sáb: 11:00 - 19:00', NULL, NULL, '@ecotrends', NULL, NULL,
-  3.1, 35, 'Augusta', NULL, false, 'Curadoria eco-friendly com marcas locais.'),
+  'Seg a Sáb: 11:00 - 19:00', NULL, NULL, '@ecotrends', '@ecotrends', NULL,
+  'Augusta', NULL, false, 'Curadoria eco-friendly com marcas locais.'),
 
  (5, 'Garimpo Urbano', 'Street + vintage na Consolação',
   'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=1600&q=80',
-  'Rua da Consolação, 210', NULL, NULL,
+  'Rua da Consolação, 210', -23.5565, -46.6623,
   NULL,
-  'Seg a Sáb: 10:00 - 19:30', NULL, NULL, '@garimpourbano', NULL, NULL,
-  0.6, 8, 'Augusta', NULL, false, NULL),
+  'Seg a Sáb: 10:00 - 19:30', NULL, NULL, '@garimpourbano', '@garimpourbano', NULL,
+  'Augusta', NULL, false, NULL),
 
  (6, 'Querido Brechó', 'Curadoria feminina e genderless',
   'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=1600&q=80',
-  'Rua Sabará, 41', NULL, NULL,
+  'Rua Sabará, 41', -23.5610, -46.6682,
   NULL,
-  'Seg a Sex: 11:00 - 18:30', NULL, NULL, '@queridobrecho', NULL, NULL,
-  1.2, 15, 'Pinheiros', NULL, false, NULL),
+  'Seg a Sex: 11:00 - 18:30', NULL, NULL, '@queridobrecho', '@queridobrecho', NULL,
+  'Pinheiros', NULL, false, NULL),
 
  (7, 'Revive Vintage', 'Peças clássicas restauradas',
   'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1600&q=80',
-  'Rua São Carlos do Pinhal, 15', NULL, NULL,
+  'Rua São Carlos do Pinhal, 15', -23.5588, -46.6510,
   NULL,
-  'Qua a Dom: 12:00 - 20:00', NULL, NULL, '@revivevintage', NULL, NULL,
-  2.1, 25, 'Centro', NULL, false, NULL),
+  'Qua a Dom: 12:00 - 20:00', NULL, NULL, '@revivevintage', '@revivevintage', NULL,
+  'Centro', NULL, false, NULL),
 
  (8, 'Vintage Chic', 'Clássicos curados',
   'https://images.unsplash.com/photo-1496747611180-206a5c8c1a09?auto=format&fit=crop&w=1600&q=80',
-  'Rua Exemplo, 99', NULL, NULL,
+  'Rua Exemplo, 99', -23.5599, -46.6601,
   NULL,
-  'Seg a Sex: 10:00 - 18:00', NULL, NULL, '@vintagechic', NULL, NULL,
-  NULL, NULL, 'Centro', NULL, false, NULL)
+  'Seg a Sex: 10:00 - 18:00', NULL, NULL, '@vintagechic', '@vintagechic', NULL,
+  'Centro', NULL, false, NULL)
 ON CONFLICT (id) DO NOTHING;
 
 -- Gallery URLs

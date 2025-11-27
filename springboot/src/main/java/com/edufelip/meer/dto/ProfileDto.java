@@ -1,7 +1,5 @@
 package com.edufelip.meer.dto;
 
-import com.edufelip.meer.dto.ThriftStoreDto;
-
 public record ProfileDto(
         Integer id,
         String name,
