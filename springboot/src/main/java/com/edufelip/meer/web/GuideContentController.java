@@ -5,6 +5,7 @@ import com.edufelip.meer.domain.GetGuideContentUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.dto.GuideContentDto;
+import com.edufelip.meer.dto.GuideTopDto;
 import com.edufelip.meer.mapper.Mappers;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
@@ -43,12 +44,12 @@ public class GuideContentController {
     }
 
     @GetMapping("/top")
-    public List<GuideContentDto> top(@RequestHeader("Authorization") String authHeader,
-                                     @RequestParam(name = "limit", defaultValue = "10") int limit) {
+    public List<GuideTopDto> top(@RequestHeader("Authorization") String authHeader,
+                                 @RequestParam(name = "limit", defaultValue = "10") int limit) {
         currentUser(authHeader); // enforce auth
         return getGuideContentUseCase.executeRecentTop10().stream()
                 .limit(limit)
-                .map(Mappers::toDto)
+                .map(gc -> new GuideTopDto(gc.getId(), gc.getTitle(), gc.getDescription(), gc.getImageUrl()))
                 .toList();
     }
 

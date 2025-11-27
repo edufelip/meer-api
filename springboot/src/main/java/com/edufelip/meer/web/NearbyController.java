@@ -4,7 +4,7 @@ import com.edufelip.meer.core.store.ThriftStore;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.dto.PageResponse;
-import com.edufelip.meer.dto.ThriftStoreDto;
+import com.edufelip.meer.dto.NearbyStoreDto;
 import com.edufelip.meer.mapper.Mappers;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
@@ -40,7 +40,7 @@ public class NearbyController {
     }
 
     @GetMapping("/nearby")
-    public PageResponse<ThriftStoreDto> nearby(@RequestHeader("Authorization") String authHeader,
+    public PageResponse<NearbyStoreDto> nearby(@RequestHeader("Authorization") String authHeader,
                                                @RequestParam(name = "lat") double lat,
                                                @RequestParam(name = "lng") double lng,
                                                @RequestParam(name = "pageIndex", defaultValue = "0") int pageIndex,
@@ -63,7 +63,23 @@ public class NearbyController {
             Double distanceMeters = (store.getLatitude() != null && store.getLongitude() != null)
                     ? distanceKm(lat, lng, store.getLatitude(), store.getLongitude()) * 1000
                     : null;
-            return Mappers.toDto(store, false, favoriteIds.contains(store.getId()), rating, reviewCount, distanceMeters);
+            Integer walkMinutes = distanceMeters != null ? (int) Math.round(distanceMeters / 80.0) : null;
+            return new NearbyStoreDto(
+                    store.getId(),
+                    store.getName(),
+                    store.getDescription(),
+                    firstPhotoOrCover(store),
+                    store.getAddressLine(),
+                    store.getLatitude(),
+                    store.getLongitude(),
+                    store.getNeighborhood(),
+                    favoriteIds.contains(store.getId()),
+                    store.getCategories(),
+                    rating,
+                    reviewCount,
+                    distanceMeters,
+                    walkMinutes
+            );
         }).toList();
 
         return new PageResponse<>(items, pageIndex, page.hasNext());
@@ -92,5 +108,12 @@ public class NearbyController {
             throw new InvalidTokenException();
         }
         return authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidTokenException::new);
+    }
+
+    private String firstPhotoOrCover(ThriftStore store) {
+        if (store.getPhotos() != null && !store.getPhotos().isEmpty()) {
+            return store.getPhotos().get(0).getUrl();
+        }
+        return store.getCoverImageUrl();
     }
 }

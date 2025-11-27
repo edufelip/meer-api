@@ -33,8 +33,6 @@ public class ThriftStore {
 
     private Double latitude;
     private Double longitude;
-    @Column(length = 2048)
-    private String mapImageUrl;
     private String phone;
     private String email;
 
@@ -49,8 +47,6 @@ public class ThriftStore {
     @ElementCollection
     private List<String> categories;
 
-    private Double distanceKm;
-    private Integer walkTimeMinutes;
     private String neighborhood;
     private String badgeLabel;
     private Boolean isFavorite;
@@ -76,9 +72,9 @@ public class ThriftStore {
     public ThriftStore() {}
 
     public ThriftStore(Integer id, String name, String tagline, String coverImageUrl, List<String> galleryUrls,
-                       String addressLine, Double latitude, Double longitude, String mapImageUrl, String openingHours,
-                       String openingHoursNotes, Social social, List<String> categories, Double distanceKm,
-                       Integer walkTimeMinutes, String neighborhood, String badgeLabel, Boolean isFavorite,
+                       String addressLine, Double latitude, Double longitude, String openingHours,
+                       String openingHoursNotes, Social social, List<String> categories,
+                       String neighborhood, String badgeLabel, Boolean isFavorite,
                        String description, List<GuideContent> contents) {
         this.id = id;
         this.name = name;
@@ -88,13 +84,10 @@ public class ThriftStore {
         this.addressLine = addressLine;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.mapImageUrl = mapImageUrl;
         this.openingHours = openingHours;
         this.openingHoursNotes = openingHoursNotes;
         this.social = social;
         this.categories = categories;
-        this.distanceKm = distanceKm;
-        this.walkTimeMinutes = walkTimeMinutes;
         this.neighborhood = neighborhood;
         this.badgeLabel = badgeLabel;
         this.isFavorite = isFavorite;
@@ -110,15 +103,12 @@ public class ThriftStore {
     public String getAddressLine() { return addressLine; }
     public Double getLatitude() { return latitude; }
     public Double getLongitude() { return longitude; }
-    public String getMapImageUrl() { return mapImageUrl; }
     public String getPhone() { return phone; }
     public String getEmail() { return email; }
     public String getOpeningHours() { return openingHours; }
     public String getOpeningHoursNotes() { return openingHoursNotes; }
     public Social getSocial() { return social; }
     public List<String> getCategories() { return categories; }
-    public Double getDistanceKm() { return distanceKm; }
-    public Integer getWalkTimeMinutes() { return walkTimeMinutes; }
     public String getNeighborhood() { return neighborhood; }
     public String getBadgeLabel() { return badgeLabel; }
     public Boolean getIsFavorite() { return isFavorite; }
@@ -136,15 +126,12 @@ public class ThriftStore {
     public void setAddressLine(String addressLine) { this.addressLine = addressLine; }
     public void setLatitude(Double latitude) { this.latitude = latitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
-    public void setMapImageUrl(String mapImageUrl) { this.mapImageUrl = mapImageUrl; }
     public void setPhone(String phone) { this.phone = phone; }
     public void setEmail(String email) { this.email = email; }
     public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
     public void setOpeningHoursNotes(String openingHoursNotes) { this.openingHoursNotes = openingHoursNotes; }
     public void setSocial(Social social) { this.social = social; }
     public void setCategories(List<String> categories) { this.categories = categories; }
-    public void setDistanceKm(Double distanceKm) { this.distanceKm = distanceKm; }
-    public void setWalkTimeMinutes(Integer walkTimeMinutes) { this.walkTimeMinutes = walkTimeMinutes; }
     public void setNeighborhood(String neighborhood) { this.neighborhood = neighborhood; }
     public void setBadgeLabel(String badgeLabel) { this.badgeLabel = badgeLabel; }
     public void setIsFavorite(Boolean isFavorite) { this.isFavorite = isFavorite; }

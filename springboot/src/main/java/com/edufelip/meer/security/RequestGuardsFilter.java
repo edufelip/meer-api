@@ -36,7 +36,8 @@ public class RequestGuardsFilter extends OncePerRequestFilter {
         } catch (GuardException ex) {
             sendUnauthorized(response, ex.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            sendUnauthorized(response, "Invalid or expired token");
+            return;
         }
     }
 

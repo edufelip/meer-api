@@ -4,8 +4,7 @@ import com.edufelip.meer.core.auth.AuthUser;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.dto.FavoritesVersionDto;
-import com.edufelip.meer.dto.ThriftStoreDto;
-import com.edufelip.meer.mapper.Mappers;
+import com.edufelip.meer.dto.FavoriteStoreDto;
 import com.edufelip.meer.service.StoreFeedbackService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
@@ -44,7 +43,9 @@ public class FavoritesController {
     }
 
     @GetMapping
-    public List<ThriftStoreDto> listFavorites(@RequestHeader("Authorization") String authHeader) {
+    public List<FavoriteStoreDto> listFavorites(@RequestHeader("Authorization") String authHeader,
+                                                @RequestParam(name = "lat", required = false) Double lat,
+                                                @RequestParam(name = "lng", required = false) Double lng) {
         AuthUser user = currentUser(authHeader);
         var ids = user.getFavorites().stream().map(f -> f.getId()).toList();
         var summaries = storeFeedbackService.getSummaries(ids);
@@ -54,7 +55,19 @@ public class FavoritesController {
                     var summary = summaries.get(store.getId());
                     Double rating = summary != null ? summary.rating() : null;
                     Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
-                    return Mappers.toDto(store, false, true, rating, reviewCount, null);
+                    Double distanceMeters = (lat != null && lng != null && store.getLatitude() != null && store.getLongitude() != null)
+                            ? distanceKm(lat, lng, store.getLatitude(), store.getLongitude()) * 1000
+                            : null;
+                    return new FavoriteStoreDto(
+                            store.getId(),
+                            store.getName(),
+                            store.getDescription(),
+                            firstPhotoOrCover(store),
+                            store.getLatitude(),
+                            store.getLongitude(),
+                            true,
+                            distanceMeters
+                    );
                 })
                 .toList();
     }
@@ -102,5 +115,24 @@ public class FavoritesController {
             throw new InvalidTokenException();
         }
         return authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidTokenException::new);
+    }
+
+    private Double distanceKm(double lat1, double lon1, Double lat2, Double lon2) {
+        if (lat2 == null || lon2 == null) return null;
+        double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    private String firstPhotoOrCover(com.edufelip.meer.core.store.ThriftStore store) {
+        if (store.getPhotos() != null && !store.getPhotos().isEmpty()) {
+            return store.getPhotos().get(0).getUrl();
+        }
+        return store.getCoverImageUrl();
     }
 }
