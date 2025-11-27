@@ -202,17 +202,17 @@ public class ThriftStoreController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String social,
             @RequestParam(required = false) String categories,
-            @RequestParam(required = false) String tagline,
             @RequestParam(required = false) String neighborhood,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) String photoOrder,
-            @RequestParam(required = false) String deletePhotoIds,
             @RequestPart(required = false) List<MultipartFile> newPhotos
     ) {
         var user = currentUser(authHeader);
         if (name == null || name.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
         if (addressLine == null || addressLine.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "addressLine is required");
+        if (description == null || description.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "description is required");
+        if (phone == null || phone.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "phone is required");
         if (latitude == null || longitude == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "latitude/longitude required or geocoding failed");
         }
@@ -224,21 +224,18 @@ public class ThriftStoreController {
         store.setAddressLine(addressLine);
         store.setLatitude(latitude);
         store.setLongitude(longitude);
-        if (phone != null) {
-            var socialObj = store.getSocial() != null ? store.getSocial() : new com.edufelip.meer.core.store.Social();
-            socialObj.setWhatsapp(phone);
-            store.setSocial(socialObj);
-            store.setPhone(phone);
-        }
+        var socialObj = store.getSocial() != null ? store.getSocial() : new com.edufelip.meer.core.store.Social();
+        store.setSocial(socialObj);
+        store.setPhone(phone);
         store.setEmail(email);
-        store.setTagline(tagline);
+        store.setTagline(null);
         store.setNeighborhood(neighborhood);
         store.setCategories(parseStringArray(categories));
         store.setSocial(parseSocial(social));
 
         var saved = thriftStoreRepository.save(store);
 
-        handlePhotos(saved, deletePhotoIds, newPhotos, photoOrder);
+        handlePhotos(saved, null, newPhotos, photoOrder);
 
         user.setOwnedThriftStore(saved);
         authUserRepository.save(user);
@@ -379,7 +376,7 @@ public class ThriftStoreController {
         try {
             Map<String, String> map = objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
             return new com.edufelip.meer.core.store.Social(
-                    map.get("facebook"), map.get("instagram"), map.get("website"), map.get("whatsapp")
+                    map.get("facebook"), map.get("instagram"), map.get("website"), null
             );
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social JSON");
