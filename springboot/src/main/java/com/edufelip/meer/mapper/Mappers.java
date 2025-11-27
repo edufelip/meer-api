@@ -62,7 +62,7 @@ public class Mappers {
                 store.getSocial() != null ? store.getSocial().getFacebook() : null,
                 store.getSocial() != null ? store.getSocial().getInstagram() : null,
                 store.getSocial() != null ? store.getSocial().getWebsite() : null,
-                store.getSocial() != null ? store.getSocial().getWhatsapp() : null,
+                null,
                 store.getCategories(),
                 rating,
                 reviewCount,
