@@ -10,6 +10,7 @@ import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.repo.CategoryRepository;
 import com.edufelip.meer.domain.repo.ThriftStorePhotoRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
+import com.edufelip.meer.core.store.Social;
 import com.edufelip.meer.dto.GuideContentDto;
 import com.edufelip.meer.dto.PageResponse;
 import com.edufelip.meer.dto.ThriftStoreDto;
@@ -279,10 +280,9 @@ public class ThriftStoreController {
         if (openingHours != null) store.setOpeningHours(openingHours);
         if (addressLine != null) store.setAddressLine(addressLine);
         if (phone != null) {
-            var socialObj = store.getSocial() != null ? store.getSocial() : new com.edufelip.meer.core.store.Social();
-            socialObj.setWhatsapp(phone);
-            store.setSocial(socialObj);
-            store.setPhone(phone);
+        var socialObj = store.getSocial() != null ? store.getSocial() : new Social();
+        store.setSocial(socialObj);
+        store.setPhone(phone);
         }
         if (email != null) store.setEmail(email);
         if (tagline != null) store.setTagline(tagline);
@@ -371,12 +371,12 @@ public class ThriftStoreController {
         }
     }
 
-    private com.edufelip.meer.core.store.Social parseSocial(String json) {
+    private Social parseSocial(String json) {
         if (json == null || json.isBlank()) return null;
         try {
             Map<String, String> map = objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
-            return new com.edufelip.meer.core.store.Social(
-                    map.get("facebook"), map.get("instagram"), map.get("website"), null
+            return new Social(
+                    map.get("facebook"), map.get("instagram"), map.get("website")
             );
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid social JSON");
