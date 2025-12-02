@@ -10,86 +10,151 @@
 </p>
 
 <p align="start">
-  Java 17 Spring Boot REST API powering the Meer app.
+  <strong>Meer API</strong> is the backend service for <strong>Meer</strong>, a mobile application dedicated to discovering and sharing thrift stores, vintage shops, and secondhand guide content. Built with Java 17 and Spring Boot.
 </p>
 
-## Tech Stack
-- Java 17, Spring Boot 4 (Web, Data JPA, Validation)
-- PostgreSQL (prod/dev) with optional PostGIS; H2 for local sandbox
-- Caffeine in-process caching (featured, guides, ratings)
-- JWT auth; App header/App Check guards in `RequestGuardsFilter`
-- Gradle wrapper for builds/tests
+## 🛠 Tech Stack
+- **Language:** Java 17
+- **Framework:** Spring Boot 3 (Web, Data JPA, Validation)
+- **Database:** PostgreSQL (prod/dev) with optional PostGIS; H2 for local sandbox
+- **Caching:** Caffeine in-process caching (featured, guides, ratings)
+- **Security:** JWT, Firebase App Check, Custom Request Guards
+- **Build:** Gradle wrapper
 
-## Prerequisites
-- Java 17+ (set `JAVA_HOME`; Temurin 17 is known-good).
-- Gradle 8+ (use the bundled `./gradlew`).
-- Postgres 14+; PostGIS extension recommended for fastest nearby queries (GiST KNN).
+## 🚀 Quick Start
 
-## Clone
+Get up and running in a few minutes.
+
+### Prerequisites
+- **Java 17+** (Set `JAVA_HOME`)
+- **PostgreSQL 14+** (Optional for local-db profile, H2 is used by default for local sandbox)
+- **Gradle 8+** (Wrapper included)
+
+### Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repository-url>
+   cd meer-api/springboot
+   ```
+
+2. **Configure Environment**
+   Copy the example environment file.
+   ```bash
+   cp .env.example .env
+   ```
+   *Edit `.env` to set your database credentials if using the `local-db` profile.*
+
+3. **Run the Application**
+   ```bash
+   # Mac/Linux - Runs with default settings
+   ./run-local.sh
+   ```
+   The API will be available at `http://localhost:8080`.
+
+   *Alternative using Gradle directly:*
+   ```bash
+   # Run with in-memory H2 database (no setup required)
+   SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+   ```
+
+## ⚙️ Configuration
+
+The application relies on environment variables defined in `springboot/.env`.
+
+| Variable | Description |
+| :--- | :--- |
+| `DB_HOST`, `DB_PORT` | PostgreSQL connection details. |
+| `SECURITY_REQUIRE_APP_HEADER` | If `true`, requires `X-App-Package` header on protected routes. |
+| `SECURITY_REQUIRE_APP_CHECK` | If `true`, enforces Firebase App Check token validation. |
+| `SECURITY_JWT_SECRET` | Secret key for signing JWTs (Min 32 bytes). |
+| `GOOGLE_*_CLIENT_ID` | OAuth client IDs for Google Sign-In. |
+
+*See `.env.example` for the full list.*
+
+## 🏗 Architecture
+
+The application follows a clean layered architecture.
+
+```mermaid
+graph TD
+    Client[Mobile App] --> Filter[RequestGuardsFilter]
+    Filter --> Controller[Web Controllers]
+    Controller --> UseCase[Domain Use Cases]
+    UseCase --> Repo[Repositories]
+    Repo --> DB[(PostgreSQL/PostGIS)]
 ```
-$ git clone <your-repository-url>
-```
 
-## Spring Boot API (Java)
-Location: `springboot/`
+### Code Map (Key Paths)
+- **Controllers:** `web/` — HTTP handling.
+- **Business Logic:** `domain/` — Use cases and rules.
+- **Data Access:** `domain/repo/` — Spring Data JPA repositories.
+- **Entities:** `core/` — Domain entities.
+- **Security:** `security/` — JWT provider and request guards.
 
-- Environment
-  - DB vars: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DEVDB_NAME`, `DB_USER`, `DB_PASSWORD`.
-  - JWT: `SECURITY_JWT_SECRET` (>=32 bytes), `SECURITY_JWT_ACCESS_TTL_MINUTES`, `SECURITY_JWT_REFRESH_TTL_DAYS`.
-  - Google login: `GOOGLE_ANDROID_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`, `GOOGLE_WEB_CLIENT_ID`.
-  - Copy `springboot/.env.example` → `springboot/.env` and fill the values (never commit secrets).
-  - Profiles: `default` (remote/cloud Postgres), `local-db` (dev Postgres), `prod` (production), `local` (H2 sandbox). Set via `SPRING_PROFILES_ACTIVE`.
-  - Caching: uses Caffeine (in-JVM). No Redis required. TTLs: featured/guides 10m, ratings 5m (see `caffeine-cache.properties`).
-- Run
-  - `cd springboot && ./run-local.sh` — loads `.env`, defaults to `SPRING_PROFILES_ACTIVE=prod`; override with `SPRING_PROFILES_ACTIVE=local-db ./run-local.sh` to hit the dev DB.
-  - `SPRING_PROFILES_ACTIVE=local-db ./gradlew :springboot:bootRun` — run from repo root.
-  - `SPRING_PROFILES_ACTIVE=local ./gradlew :springboot:bootRun` — in-memory H2.
-- Tests
-  - `cd springboot && ./run-tests.sh` — runs with `.env` loaded (defaults to `local-db` profile).
-  - `./gradlew :springboot:test` — JUnit 5 suite from repo root.
+## 🔌 Core Endpoints
 
-## Security Model
-- Public routes (no JWT required): `/auth/login`, `/auth/signup`, `/auth/google`, `/auth/apple`, `/auth/refresh`, `/auth/forgot-password`.
-- Protected routes pass through `RequestGuardsFilter`:
-  - `X-App-Package` must match `security.appPackage` when `SECURITY_REQUIRE_APP_HEADER=true`.
-  - Optional Firebase App Check header `X-Firebase-AppCheck` (`SECURITY_REQUIRE_APP_CHECK=true`).
-  - JWT access token in `Authorization: Bearer <token>` unless `SECURITY_DISABLE_AUTH=true`.
-- Token endpoints return `{ token, refreshToken, user }`; failures return 401/403 with `{ "message": "Invalid or expired token" }`.
+<details>
+<summary><b>🛍️ Stores & Content</b></summary>
 
-## Architecture Overview
-- Controllers: `springboot/src/main/java/com/edufelip/meer/web/` — HTTP only, delegate to use cases.
-- Use cases: `springboot/src/main/java/com/edufelip/meer/domain/` — business logic.
-- Repositories: `springboot/src/main/java/com/edufelip/meer/domain/repo/` — Spring Data JPA.
-- Entities: `springboot/src/main/java/com/edufelip/meer/core/**`.
-- DTOs & mappers: `springboot/src/main/java/com/edufelip/meer/dto/` and `springboot/src/main/java/com/edufelip/meer/mapper/`.
-- Config: `springboot/src/main/resources/application.yml`.
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/home` | Aggregated feed: Featured, Nearby, Top guides. |
+| `GET` | `/featured` | Top 10 featured stores (Cached 10m). |
+| `GET` | `/nearby` | Find stores near a location (Lat/Lng required). |
+| `POST` | `/stores` | Create a thrift store (Multipart, max 10 photos). |
+| `GET` | `/contents/top` | Recent guide content (Cached 10m). |
 
-### Core Endpoints (user flows)
-- `/home` — featured (top 10), nearby (lat/lng required), guide content top 10 in one payload.
-- `/featured` — featured stores only (cached 10m).
-- `/nearby?lat=…&lng=…&pageIndex=0&pageSize=10` — paginated nearby list (KNN: PostGIS geography when available; falls back to point/Haversine).
-- `/contents/top?limit=10` — recent guide content (cached 10m).
-- `/stores?type=nearby` — also uses paged nearby; requires lat/lng.
-- Auth: `/auth/login`, `/auth/signup`, `/auth/google`, `/auth/apple`, `/auth/refresh`, `/auth/forgot-password`.
+</details>
 
-### Performance & Data
-- Spatial: PostGIS-enabled geography KNN query preferred; GiST index created at boot in `local-db` via `data-postgres.sql`. Falls back gracefully if PostGIS absent.
-- Caching: Caffeine per-node caches: `featuredTop10` (10m), `guideTop10` (10m), `storeRatings` (5m, lists ≤50 ids). Eviction is time-based; no Redis dependency.
-- Ratings aggregation: cached by store-id list; distances/favorites remain per-request.
+<details>
+<summary><b>🔐 Authentication</b></summary>
 
-## Code Map (Key Paths)
-- Auth flow: `web/AuthController.java`, use cases in `domain/auth/*`, token provider in `security/token/`.
-- Stores & content: `web/ThriftStoreController.java`, `domain/*ThriftStore*`, `domain/*GuideContent*`.
-- Categories: `web/CategoryController.java`, repo in `domain/repo/CategoryRepository.java`.
-- Filters/guards: `security/RequestGuardsFilter.java`, guard classes in `security/guards/`.
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `POST` | `/auth/login` | Email/Password login. |
+| `POST` | `/auth/signup` | Register new user. |
+| `POST` | `/auth/google` | Google OAuth login. |
+| `POST` | `/auth/apple` | Apple Sign-In. |
 
-## Infrastructure Notes
-- Remote Postgres is the default; for the dev database set `SPRING_PROFILES_ACTIVE=local-db` and point `DB_*` to the dev instance.
-- PostGIS recommended: `CREATE EXTENSION IF NOT EXISTS postgis;` and KNN GiST index is auto-created from `data-postgres.sql` on boot in `local-db`.
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`; OpenAPI JSON at `/v3/api-docs`.
+</details>
 
-## Contributing
+*Full API documentation available via Swagger UI at `http://localhost:8080/swagger-ui/index.html`.*
+
+## 🛡 Security Model
+
+- **Public Routes:** Auth endpoints (`/auth/*`).
+- **Protected Routes:** All others pass through `RequestGuardsFilter`.
+  - **App Check:** Verified if `SECURITY_REQUIRE_APP_CHECK=true`.
+  - **App Header:** `X-App-Package` checked if `SECURITY_REQUIRE_APP_HEADER=true`.
+  - **JWT:** Bearer token required unless `SECURITY_DISABLE_AUTH=true`.
+
+## ⚡ Performance & Data
+
+- **Spatial Queries:** PostGIS `geography` KNN queries are preferred for "nearby" searches. The app falls back gracefully to Haversine formulas if PostGIS is absent.
+- **Caching:** Caffeine (in-memory) is used for high-traffic read endpoints:
+    - `featuredTop10` (10m TTL)
+    - `guideTop10` (10m TTL)
+    - `storeRatings` (5m TTL)
+- **Images:** Uploads are resized to ≤1600px and compressed to JPEG/WebP to ensure fast mobile loading.
+
+## ❓ Troubleshooting
+
+**Issue: `function geography(geometry) does not exist`**
+- **Cause:** PostGIS extension is missing in your Postgres instance.
+- **Fix:** Run `CREATE EXTENSION IF NOT EXISTS postgis;` in your database.
+
+**Issue: 403 Forbidden on Localhost**
+- **Cause:** Missing Auth token or App Headers.
+- **Fix:** Ensure you are sending `Authorization: Bearer <token>` and `X-App-Package` (if enabled). Or set `SECURITY_DISABLE_AUTH=true` in `.env` for testing.
+
+## 🤝 Contributing
+
 1. Create a feature branch.
-2. Run `./gradlew :springboot:test` (and `./gradlew :springboot:clean build` before opening a PR).
-3. Commit with `type(scope): summary`.
-4. Open a PR with description, linked issue, and commands run.
+2. Run tests: `./gradlew :springboot:test`
+3. Commit changes following conventional commits (`type(scope): summary`).
+4. Open a PR.
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
