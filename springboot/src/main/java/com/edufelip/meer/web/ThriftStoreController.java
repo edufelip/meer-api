@@ -400,6 +400,9 @@ public class ThriftStoreController {
         if (user.getOwnedThriftStore() == null || !user.getOwnedThriftStore().getId().equals(store.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner");
         }
+        if (store.getPhotos() != null) {
+            store.getPhotos().forEach(p -> gcsStorageService.deleteByUrl(p.getUrl()));
+        }
         thriftStoreRepository.delete(store);
         return ResponseEntity.noContent().build();
     }
