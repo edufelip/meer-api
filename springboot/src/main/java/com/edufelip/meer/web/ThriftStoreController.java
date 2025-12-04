@@ -43,6 +43,9 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Objects;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import com.edufelip.meer.core.store.ThriftStorePhoto;
 
 @RestController
@@ -401,7 +404,11 @@ public class ThriftStoreController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner");
         }
         if (store.getPhotos() != null) {
-            store.getPhotos().forEach(p -> gcsStorageService.deleteByUrl(p.getUrl()));
+            store.getPhotos().forEach(p -> {
+                if (!deleteLocalIfUploads(p.getUrl())) {
+                    gcsStorageService.deleteByUrl(p.getUrl());
+                }
+            });
         }
         thriftStoreRepository.delete(store);
         return ResponseEntity.noContent().build();
@@ -480,6 +487,17 @@ public class ThriftStoreController {
     private boolean isSupportedContentType(String ctype) {
         if (ctype == null) return false;
         return SUPPORTED_CONTENT_TYPES.contains(ctype.toLowerCase());
+    }
+
+    private boolean deleteLocalIfUploads(String url) {
+        if (url == null || !url.startsWith("/uploads/")) return false;
+        try {
+            Path path = Paths.get("springboot", url.substring(1));
+            Files.deleteIfExists(path);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private List<String> normalizeCategories(List<String> categories) {

@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.Optional;
+import java.nio.file.Paths;
 
 @RestController
 @RequestMapping("/profile")
@@ -161,12 +162,22 @@ public class ProfileController {
                 .flatMap(store -> thriftStoreRepository.findById(store.getId()))
                 .ifPresent(store -> {
                     if (store.getPhotos() != null) {
-                        store.getPhotos().forEach(p -> gcsStorageService.deleteByUrl(p.getUrl()));
+                        store.getPhotos().forEach(p -> {
+                            if (!deleteLocalIfUploads(p.getUrl())) {
+                                gcsStorageService.deleteByUrl(p.getUrl());
+                            }
+                        });
                     }
                     thriftStoreRepository.delete(store);
                 });
         // cleanup: favorites and feedbacks
         user.getFavorites().clear();
+        // delete avatar if locally stored or GCS
+        if (user.getPhotoUrl() != null) {
+            if (!deleteLocalIfUploads(user.getPhotoUrl())) {
+                gcsStorageService.deleteByUrl(user.getPhotoUrl());
+            }
+        }
         authUserRepository.save(user);
         storeFeedbackRepository.deleteByUserId(user.getId());
         authUserRepository.delete(user);
@@ -181,5 +192,16 @@ public class ProfileController {
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<?> handleInvalid(InvalidTokenException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new com.edufelip.meer.dto.ErrorDto(ex.getMessage()));
+    }
+
+    private boolean deleteLocalIfUploads(String url) {
+        if (url == null || !url.startsWith("/uploads/")) return false;
+        try {
+            Path path = Paths.get("springboot", url.substring(1));
+            Files.deleteIfExists(path);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 }
