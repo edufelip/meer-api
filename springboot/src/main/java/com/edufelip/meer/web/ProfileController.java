@@ -4,10 +4,12 @@ import com.edufelip.meer.domain.auth.GetProfileUseCase;
 import com.edufelip.meer.domain.auth.UpdateProfileUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.StoreFeedbackRepository;
+import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.dto.DeleteAccountRequest;
 import com.edufelip.meer.dto.ProfileDto;
 import com.edufelip.meer.dto.UpdateProfileRequest;
 import com.edufelip.meer.mapper.Mappers;
+import com.edufelip.meer.service.GcsStorageService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/profile")
@@ -38,15 +41,21 @@ public class ProfileController {
     private final UpdateProfileUseCase updateProfileUseCase;
     private final AuthUserRepository authUserRepository;
     private final StoreFeedbackRepository storeFeedbackRepository;
+    private final ThriftStoreRepository thriftStoreRepository;
+    private final GcsStorageService gcsStorageService;
 
     public ProfileController(GetProfileUseCase getProfileUseCase,
                              UpdateProfileUseCase updateProfileUseCase,
                              AuthUserRepository authUserRepository,
-                             StoreFeedbackRepository storeFeedbackRepository) {
+                             StoreFeedbackRepository storeFeedbackRepository,
+                             ThriftStoreRepository thriftStoreRepository,
+                             GcsStorageService gcsStorageService) {
         this.getProfileUseCase = getProfileUseCase;
         this.updateProfileUseCase = updateProfileUseCase;
         this.authUserRepository = authUserRepository;
         this.storeFeedbackRepository = storeFeedbackRepository;
+        this.thriftStoreRepository = thriftStoreRepository;
+        this.gcsStorageService = gcsStorageService;
     }
 
     @GetMapping
@@ -125,6 +134,15 @@ public class ProfileController {
         if (body == null || body.email() == null || !body.email().equalsIgnoreCase(user.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email confirmation does not match");
         }
+        // delete owned store + photos in GCS
+        Optional.ofNullable(user.getOwnedThriftStore())
+                .flatMap(store -> thriftStoreRepository.findById(store.getId()))
+                .ifPresent(store -> {
+                    if (store.getPhotos() != null) {
+                        store.getPhotos().forEach(p -> gcsStorageService.deleteByUrl(p.getUrl()));
+                    }
+                    thriftStoreRepository.delete(store);
+                });
         // cleanup: favorites and feedbacks
         user.getFavorites().clear();
         authUserRepository.save(user);

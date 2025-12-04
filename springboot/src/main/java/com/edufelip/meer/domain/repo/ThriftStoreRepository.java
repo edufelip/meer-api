@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface ThriftStoreRepository extends JpaRepository<ThriftStore, UUID> {
 
-    @Query("select t from ThriftStore t where :categoryId in elements(t.categories)")
+    @Query("select distinct t from ThriftStore t join t.categories c where lower(c) = lower(:categoryId)")
     Page<ThriftStore> findByCategoryId(@Param("categoryId") String categoryId, Pageable pageable);
 
     @EntityGraph(attributePaths = "photos")
