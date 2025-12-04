@@ -28,6 +28,12 @@ security:
     iosClientId: ${GOOGLE_IOS_CLIENT_ID:}
     webClientId: ${GOOGLE_WEB_CLIENT_ID:}
 
+storage:
+  gcs:
+    bucket: ${GCS_BUCKET:meer-uploads}
+    public-base-url: ${GCS_PUBLIC_BASE_URL:}
+    signed-url-ttl-minutes: ${GCS_SIGNED_URL_TTL_MINUTES:120}
+
 ---
 # Default profile: cloud/dev Postgres
 spring:

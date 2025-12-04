@@ -1,0 +1,44 @@
+package com.edufelip.meer.dto;
+
+import com.edufelip.meer.core.store.Social;
+import java.util.List;
+
+public class StoreRequest {
+    private String name;
+    private String description;
+    private String openingHours;
+    private String addressLine;
+    private String phone;
+    private String email;
+    private String neighborhood;
+    private String tagline;
+    private Double latitude;
+    private Double longitude;
+    private List<String> categories;
+    private Social social;
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getOpeningHours() { return openingHours; }
+    public void setOpeningHours(String openingHours) { this.openingHours = openingHours; }
+    public String getAddressLine() { return addressLine; }
+    public void setAddressLine(String addressLine) { this.addressLine = addressLine; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getNeighborhood() { return neighborhood; }
+    public void setNeighborhood(String neighborhood) { this.neighborhood = neighborhood; }
+    public String getTagline() { return tagline; }
+    public void setTagline(String tagline) { this.tagline = tagline; }
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public List<String> getCategories() { return categories; }
+    public void setCategories(List<String> categories) { this.categories = categories; }
+    public Social getSocial() { return social; }
+    public void setSocial(Social social) { this.social = social; }
+}
