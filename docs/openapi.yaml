@@ -109,6 +109,101 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           description: Not found
+
+  /dashboard/categories:
+    get:
+      summary: List categories (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: Paged categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Create category (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpsertRequest'
+      responses:
+        '200':
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Category already exists
+
+  /dashboard/categories/{id}:
+    put:
+      summary: Update category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpsertRequest'
+      responses:
+        '200':
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete category (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
     delete:
       summary: Delete contact message (admin)
       security:
@@ -723,6 +818,14 @@ components:
         id: { type: string }
         nameStringId: { type: string }
         imageResId: { type: string }
+        createdAt: { type: string, format: date-time }
+    CategoryUpsertRequest:
+      type: object
+      required: [id, nameStringId, imageResId]
+      properties:
+        id: { type: string }
+        nameStringId: { type: string }
+        imageResId: { type: string }
     PageResponseStoreCard:
       type: object
       properties:
@@ -730,6 +833,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ThriftStore'
+        page: { type: integer }
+        hasNext: { type: boolean }
+    PageResponseCategory:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Category' }
         page: { type: integer }
         hasNext: { type: boolean }
     DashboardStoreSummary:

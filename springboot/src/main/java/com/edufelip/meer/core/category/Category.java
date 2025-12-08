@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+import java.time.Instant;
 
 @Entity
 @Table(name = "category")
@@ -18,6 +20,10 @@ public class Category {
     @Column(name = "image_res_id", nullable = false)
     private String imageResId;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
     public Category() {}
 
     public Category(String id, String nameStringId, String imageResId) {
@@ -29,8 +35,10 @@ public class Category {
     public String getId() { return id; }
     public String getNameStringId() { return nameStringId; }
     public String getImageResId() { return imageResId; }
+    public Instant getCreatedAt() { return createdAt; }
 
     public void setId(String id) { this.id = id; }
     public void setNameStringId(String nameStringId) { this.nameStringId = nameStringId; }
     public void setImageResId(String imageResId) { this.imageResId = imageResId; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

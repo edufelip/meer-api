@@ -138,6 +138,10 @@ graph TD
 | `DELETE` | `/dashboard/support/contacts/{id}` | Delete support contact. |
 | `DELETE` | `/dashboard/contents/{id}` | Delete guide content. |
 | `DELETE` | `/dashboard/users/{id}` | Delete user. |
+| `GET` | `/dashboard/categories` | Paged categories list. |
+| `POST` | `/dashboard/categories` | Create category. |
+| `PUT` | `/dashboard/categories/{id}` | Update category. |
+| `DELETE` | `/dashboard/categories/{id}` | Delete category. |
 
 All require bearer JWT with `role=ADMIN` (claim and DB value).
 New admin endpoints should always be placed under `/dashboard/**` so they are covered by the dashboard admin guard.
