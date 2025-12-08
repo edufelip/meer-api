@@ -42,6 +42,7 @@ public class RequestGuardsFilter extends OncePerRequestFilter {
         String path = request.getServletPath().toLowerCase();
         return switch (path) {
             case "/auth/login", "/auth/signup", "/auth/google", "/auth/apple", "/auth/refresh", "/auth/forgot-password", "/dashboard/login" -> true;
+            case "/support/contact" -> true;
             default -> false;
         };
     }

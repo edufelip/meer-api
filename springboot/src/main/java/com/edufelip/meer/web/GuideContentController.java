@@ -62,6 +62,9 @@ public class GuideContentController {
                                                                @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
                                                                @RequestParam(name = "storeId", required = false) java.util.UUID storeId) {
         var user = currentUser(authHeader); // enforce auth
+        if (page < 0 || pageSize < 1 || pageSize > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
         java.util.UUID targetStoreId = storeId != null ? storeId
                 : (user.getOwnedThriftStore() != null ? user.getOwnedThriftStore().getId() : null);
         if (targetStoreId == null) {
@@ -78,7 +81,7 @@ public class GuideContentController {
                         gc.getThriftStore() != null ? gc.getThriftStore().getName() : null,
                         gc.getCreatedAt()))
                 .toList();
-        return new com.edufelip.meer.dto.PageResponse<>(items, page + 1, pageRes.hasNext());
+        return new com.edufelip.meer.dto.PageResponse<>(items, page, pageRes.hasNext());
     }
 
     @GetMapping("/{id}")

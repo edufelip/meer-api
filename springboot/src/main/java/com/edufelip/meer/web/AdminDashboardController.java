@@ -49,22 +49,24 @@ public class AdminDashboardController {
     public PageResponse<DashboardStoreSummaryDto> listStores(@RequestHeader("Authorization") String authHeader,
                                                              @RequestParam(defaultValue = "0") int page,
                                                              @RequestParam(defaultValue = "20") int pageSize,
-                                                             @RequestParam(required = false) String q,
                                                              @RequestParam(name = "search", required = false) String search,
                                                              @RequestParam(defaultValue = "newest") String sort) {
         requireAdmin(authHeader);
-        String term = (search != null && !search.isBlank()) ? search : q;
+        if (page < 0 || pageSize < 1 || pageSize > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
+        String term = search;
         Sort s = "oldest".equalsIgnoreCase(sort)
                 ? Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt")
                 : Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(pageSize, 100), s);
+        Pageable pageable = PageRequest.of(page, pageSize, s);
         var pageRes = (term != null && !term.isBlank())
                 ? thriftStoreRepository.search(term.trim(), pageable)
                 : thriftStoreRepository.findAll(pageable);
         List<DashboardStoreSummaryDto> items = pageRes.getContent().stream()
                 .map(ts -> new DashboardStoreSummaryDto(ts.getId(), ts.getName(), ts.getAddressLine(), ts.getCreatedAt()))
                 .toList();
-        return new PageResponse<>(items, page + 1, pageRes.hasNext());
+        return new PageResponse<>(items, page, pageRes.hasNext());
     }
 
     @GetMapping("/contents")
@@ -74,15 +76,18 @@ public class AdminDashboardController {
                                                       @RequestParam(required = false) String q,
                                                       @RequestParam(defaultValue = "newest") String sort) {
         requireAdmin(authHeader);
+        if (page < 0 || pageSize < 1 || pageSize > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
         Sort s = "oldest".equalsIgnoreCase(sort)
                 ? Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt")
                 : Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(pageSize, 100), s);
+        Pageable pageable = PageRequest.of(page, pageSize, s);
         var pageRes = (q != null && !q.isBlank())
                 ? guideContentRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, pageable)
                 : guideContentRepository.findAll(pageable);
         List<GuideContentDto> items = pageRes.getContent().stream().map(Mappers::toDto).toList();
-        return new PageResponse<>(items, page + 1, pageRes.hasNext());
+        return new PageResponse<>(items, page, pageRes.hasNext());
     }
 
     @GetMapping("/users")
@@ -92,10 +97,13 @@ public class AdminDashboardController {
                                                 @RequestParam(required = false) String q,
                                                 @RequestParam(defaultValue = "newest") String sort) {
         requireAdmin(authHeader);
+        if (page < 0 || pageSize < 1 || pageSize > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
+        }
         Sort s = "oldest".equalsIgnoreCase(sort)
                 ? Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt")
                 : Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(pageSize, 100), s);
+        Pageable pageable = PageRequest.of(page, pageSize, s);
         var pageRes = (q != null && !q.isBlank())
                 ? authUserRepository.findByEmailContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(q, q, pageable)
                 : authUserRepository.findAll(pageable);
@@ -109,7 +117,7 @@ public class AdminDashboardController {
                         u.getPhotoUrl()
                 ))
                 .toList();
-        return new PageResponse<>(items, page + 1, pageRes.hasNext());
+        return new PageResponse<>(items, page, pageRes.hasNext());
     }
 
     @GetMapping("/users/{id}")
@@ -126,23 +134,24 @@ public class AdminDashboardController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing bearer token");
         }
         // Reuse admin user loaded by DashboardAdminGuardFilter when present
-        Object cached = RequestContextHolder.currentRequestAttributes()
-                .getAttribute("adminUser", RequestAttributes.SCOPE_REQUEST);
-
-        AuthUser user;
-        if (cached instanceof AuthUser cachedUser) {
-            user = cachedUser;
-        } else {
-            String token = authHeader.substring("Bearer ".length()).trim();
-            TokenPayload payload = tokenProvider.parseAccessToken(token);
-            user = authUserRepository.findById(payload.getUserId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
-        }
+        AuthUser user = resolveAdminFromRequest();
 
         Role effectiveRole = user.getRole() != null ? user.getRole() : Role.USER;
         if (effectiveRole != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin only");
         }
         return user;
+    }
+
+    private AuthUser resolveAdminFromRequest() {
+        try {
+            Object cached = RequestContextHolder.currentRequestAttributes()
+                    .getAttribute("adminUser", RequestAttributes.SCOPE_REQUEST);
+            if (cached instanceof AuthUser cachedUser) {
+                return cachedUser;
+            }
+        } catch (IllegalStateException ignored) {
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing admin context");
     }
 }

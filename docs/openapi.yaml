@@ -127,6 +127,26 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           description: Not found
+
+  /stores/{id}:
+    delete:
+      summary: Delete store (owner or admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -330,10 +350,6 @@ paths:
           name: search
           schema: { type: string }
           description: Case-insensitive search across store name, tagline, description, neighborhood
-        - in: query
-          name: q
-          schema: { type: string }
-          description: Alias for search
         - in: query
           name: sort
           schema:

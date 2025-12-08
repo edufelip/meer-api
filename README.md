@@ -140,6 +140,8 @@ graph TD
 | `DELETE` | `/dashboard/users/{id}` | Delete user. |
 
 All require bearer JWT with `role=ADMIN` (claim and DB value).
+New admin endpoints should always be placed under `/dashboard/**` so they are covered by the dashboard admin guard.
+Pagination in admin APIs is 0-based: send `page=0` for the first page; responses echo the same 0-based page number.
 
 </details>
 

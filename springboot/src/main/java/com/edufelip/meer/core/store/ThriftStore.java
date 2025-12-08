@@ -63,6 +63,7 @@ public class ThriftStore {
     private Instant updatedAt;
 
     @OneToMany(mappedBy = "thriftStore", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 25)
     private List<GuideContent> contents;
 
     @OneToMany(mappedBy = "thriftStore", cascade = CascadeType.ALL, orphanRemoval = true)

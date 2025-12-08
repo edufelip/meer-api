@@ -151,7 +151,7 @@ public class ThriftStoreController {
     public ThriftStoreDto getById(@PathVariable java.util.UUID id, @RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
         var store = getThriftStoreUseCase.execute(id);
-        if (store == null) return null;
+        if (store == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found");
         var summary = storeFeedbackService.getSummaries(java.util.List.of(store.getId())).get(store.getId());
         Double rating = summary != null ? summary.rating() : null;
         Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
@@ -201,7 +201,7 @@ public class ThriftStoreController {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(storeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
-        ensureOwner(user, store);
+        ensureOwnerOrAdmin(user, store);
 
         int count = request.getCount() != null ? request.getCount() : 0;
         if (count <= 0 || count > MAX_PHOTO_COUNT) {
@@ -231,7 +231,7 @@ public class ThriftStoreController {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(storeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
-        ensureOwner(user, store);
+        ensureOwnerOrAdmin(user, store);
         List<PhotoRegisterRequest.Item> items = request.getPhotos();
         if (items == null || items.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "photos array is required");
@@ -361,7 +361,7 @@ public class ThriftStoreController {
     ) {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
-        ensureOwner(user, store);
+        ensureOwnerOrAdmin(user, store);
 
         if (body.getName() != null && body.getName().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name cannot be blank");
         if (body.getAddressLine() != null && body.getAddressLine().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "addressLine cannot be blank");
@@ -474,6 +474,11 @@ public class ThriftStoreController {
         if (!(userOwnsByLink || userOwnsByStoreOwner)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner");
         }
+    }
+
+    private void ensureOwnerOrAdmin(com.edufelip.meer.core.auth.AuthUser user, ThriftStore store) {
+        if (isAdmin(user)) return;
+        ensureOwner(user, store);
     }
 
     private double distanceKm(double lat1, double lon1, Double lat2, Double lon2) {
