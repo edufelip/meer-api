@@ -6,7 +6,9 @@ public record ProfileDto(
         String email,
         String avatarUrl,
         String bio,
+        String role,
         boolean notifyNewStores,
         boolean notifyPromos,
-        ThriftStoreDto ownedThriftStore
+        ThriftStoreDto ownedThriftStore,
+        java.time.Instant createdAt
 ) {}

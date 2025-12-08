@@ -38,7 +38,7 @@ public class AppleLoginUseCase {
 
         String access = tokenProvider.generateAccessToken(user);
         String refresh = tokenProvider.generateRefreshToken(user);
-        AuthenticatedUser authUser = new AuthenticatedUser(user.getId(), user.getDisplayName(), user.getEmail());
+        AuthenticatedUser authUser = new AuthenticatedUser(user.getId(), user.getDisplayName(), user.getEmail(), user.getRole());
         return new AuthResult(access, refresh, authUser);
     }
 

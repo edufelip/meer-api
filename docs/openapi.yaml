@@ -26,6 +26,113 @@ paths:
                 $ref: '#/components/schemas/AuthResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /dashboard/login:
+    post:
+      summary: Admin-only login for dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Tokens and user (role will be ADMIN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/users/{id}:
+    get:
+      summary: Get a user by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+  /dashboard/support/contacts:
+    get:
+      summary: List contact messages (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Paged contact messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseSupportContact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/support/contacts/{id}:
+    get:
+      summary: Get contact message by id (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Contact message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportContact'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete contact message (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: User not found
   /auth/signup:
     post:
       summary: Sign up with email/password
@@ -206,6 +313,98 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageResponseGuideTop'
+
+  /dashboard/stores:
+    get:
+      summary: Admin stores list
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+          description: Case-insensitive search across store name, tagline, description, neighborhood
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Alias for search
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+      responses:
+        '200':
+          description: Paged stores (admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseDashboardStoreSummary'
+
+  /dashboard/contents:
+    get:
+      summary: Admin contents list
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+      responses:
+        '200':
+          description: Paged contents (admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseGuideTop'
+
+  /dashboard/users:
+    get:
+      summary: Admin users list
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+      responses:
+        '200':
+          description: Paged users (admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseAdminUser'
   /categories:
     get:
       summary: List categories
@@ -301,6 +500,15 @@ components:
             properties:
               message:
                 type: string
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
   schemas:
     LoginRequest:
       type: object
@@ -347,12 +555,14 @@ components:
         id: { type: integer }
         name: { type: string }
         email: { type: string, format: email }
+        role: { type: string, enum: [USER, ADMIN] }
         avatarUrl: { type: string }
         bio: { type: string }
         notifyNewStores: { type: boolean }
         notifyPromos: { type: boolean }
         ownedThriftStore:
           $ref: '#/components/schemas/ThriftStore'
+        createdAt: { type: string, format: date-time }
     StoreImage:
       type: object
       properties:
@@ -360,6 +570,24 @@ components:
         url: { type: string }
         displayOrder: { type: integer }
         isCover: { type: boolean }
+
+    SupportContact:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    PageResponseSupportContact:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SupportContact' }
+        page: { type: integer }
+        hasNext: { type: boolean }
 
     ThriftStore:
       type: object
@@ -388,6 +616,7 @@ components:
         badgeLabel: { type: string }
         isFavorite: { type: boolean }
         description: { type: string }
+        createdAt: { type: string, format: date-time }
         images:
           type: array
           items: { $ref: '#/components/schemas/StoreImage' }
@@ -427,6 +656,29 @@ components:
         longitude: { type: number, format: double }
         isFavorite: { type: boolean }
         distanceMeters: { type: number, format: double }
+    AdminUser:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [USER, ADMIN] }
+        createdAt: { type: string, format: date-time }
+        photoUrl: { type: string, format: uri, nullable: true }
+    AdminUserDetail:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [USER, ADMIN] }
+        avatarUrl: { type: string, format: uri, nullable: true }
+        bio: { type: string, nullable: true }
+        notifyNewStores: { type: boolean }
+        notifyPromos: { type: boolean }
+        ownedThriftStore:
+          $ref: '#/components/schemas/ThriftStore'
+        createdAt: { type: string, format: date-time }
     GuideTop:
       type: object
       properties:
@@ -464,6 +716,22 @@ components:
             $ref: '#/components/schemas/ThriftStore'
         page: { type: integer }
         hasNext: { type: boolean }
+    DashboardStoreSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        addressLine: { type: string }
+        createdAt: { type: string, format: date-time }
+    PageResponseDashboardStoreSummary:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardStoreSummary'
+        page: { type: integer }
+        hasNext: { type: boolean }
     NearbyPage:
       type: object
       properties:
@@ -481,5 +749,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GuideTop'
+        page: { type: integer }
+        hasNext: { type: boolean }
+
+    AdminUser:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [USER, ADMIN] }
+        createdAt: { type: string, format: date-time }
+
+    PageResponseAdminUser:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUser'
         page: { type: integer }
         hasNext: { type: boolean }

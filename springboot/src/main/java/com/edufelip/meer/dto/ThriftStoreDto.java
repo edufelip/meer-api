@@ -1,6 +1,7 @@
 package com.edufelip.meer.dto;
 
 import java.util.List;
+import java.time.Instant;
 
 public record ThriftStoreDto(
         java.util.UUID id,
@@ -26,5 +27,6 @@ public record ThriftStoreDto(
         Boolean isFavorite,
         String description,
         List<GuideContentDto> contents,
-        List<StoreImageDto> images
+        List<StoreImageDto> images,
+        Instant createdAt
 ) {}

@@ -3,8 +3,10 @@ package com.edufelip.meer.core.auth;
 import com.edufelip.meer.core.store.ThriftStore;
 import com.edufelip.meer.util.Uuid7;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.HashSet;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,6 +26,10 @@ public class AuthUser {
 
     @Column(length = 1000)
     private String bio;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
 
     @Column(nullable = false)
     private boolean notifyNewStores = true;
@@ -45,6 +51,10 @@ public class AuthUser {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
 
     public AuthUser() {}
 
@@ -72,20 +82,24 @@ public class AuthUser {
     public String getDisplayName() { return displayName; }
     public String getPhotoUrl() { return photoUrl; }
     public String getBio() { return bio; }
+    public Role getRole() { return role; }
     public boolean isNotifyNewStores() { return notifyNewStores; }
     public boolean isNotifyPromos() { return notifyPromos; }
     public ThriftStore getOwnedThriftStore() { return ownedThriftStore; }
     public String getPasswordHash() { return passwordHash; }
     public Set<ThriftStore> getFavorites() { return favorites; }
+    public Instant getCreatedAt() { return createdAt; }
 
     public void setId(UUID id) { this.id = id; }
     public void setEmail(String email) { this.email = email; }
     public void setDisplayName(String displayName) { this.displayName = displayName; }
     public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
     public void setBio(String bio) { this.bio = bio; }
+    public void setRole(Role role) { this.role = role; }
     public void setNotifyNewStores(boolean notifyNewStores) { this.notifyNewStores = notifyNewStores; }
     public void setNotifyPromos(boolean notifyPromos) { this.notifyPromos = notifyPromos; }
     public void setOwnedThriftStore(ThriftStore ownedThriftStore) { this.ownedThriftStore = ownedThriftStore; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public void setFavorites(Set<ThriftStore> favorites) { this.favorites = favorites; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

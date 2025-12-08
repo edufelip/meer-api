@@ -2,9 +2,11 @@ HELP.md
 .gradle
 .gradle-local
 .gradle-work
+.gradle-cache
 build/
 springboot/build/
 springboot/.env
+springboot/.gradle-temp/
 uploads/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/

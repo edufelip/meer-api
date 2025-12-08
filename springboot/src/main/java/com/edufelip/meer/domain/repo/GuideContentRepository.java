@@ -11,4 +11,5 @@ public interface GuideContentRepository extends JpaRepository<GuideContent, Inte
     List<GuideContent> findByThriftStoreId(UUID thriftStoreId);
     List<GuideContent> findTop10ByOrderByCreatedAtDesc();
     Page<GuideContent> findByThriftStoreIdOrderByCreatedAtDesc(UUID thriftStoreId, Pageable pageable);
+    Page<GuideContent> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description, Pageable pageable);
 }

@@ -41,7 +41,7 @@ public class RequestGuardsFilter extends OncePerRequestFilter {
     private boolean isPublicAuthPath(HttpServletRequest request) {
         String path = request.getServletPath().toLowerCase();
         return switch (path) {
-            case "/auth/login", "/auth/signup", "/auth/google", "/auth/apple", "/auth/refresh", "/auth/forgot-password" -> true;
+            case "/auth/login", "/auth/signup", "/auth/google", "/auth/apple", "/auth/refresh", "/auth/forgot-password", "/dashboard/login" -> true;
             default -> false;
         };
     }

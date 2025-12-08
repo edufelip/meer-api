@@ -72,7 +72,8 @@ public class Mappers {
                 isFavoriteOverride,
                 store.getDescription(),
                 contentsDto,
-                images
+                images,
+                store.getCreatedAt()
         );
     }
 
@@ -87,9 +88,11 @@ public class Mappers {
                 user.getEmail(),
                 user.getPhotoUrl(),
                 user.getBio(),
+                (user.getRole() != null ? user.getRole() : com.edufelip.meer.core.auth.Role.USER).name(),
                 user.isNotifyNewStores(),
                 user.isNotifyPromos(),
-                owned
+                owned,
+                user.getCreatedAt()
         );
     }
 }

@@ -6,10 +6,12 @@ import com.edufelip.meer.dto.AuthDtos;
 
 public class AuthMappers {
     public static AuthDtos.UserDto toDto(AuthenticatedUser user) {
-        return new AuthDtos.UserDto(String.valueOf(user.getId()), user.getName(), user.getEmail());
+        var role = user.getRole() != null ? user.getRole().name() : com.edufelip.meer.core.auth.Role.USER.name();
+        return new AuthDtos.UserDto(String.valueOf(user.getId()), user.getName(), user.getEmail(), role);
     }
 
     public static AuthDtos.UserDto toDto(AuthUser user) {
-        return new AuthDtos.UserDto(String.valueOf(user.getId()), user.getDisplayName(), user.getEmail());
+        var role = user.getRole() != null ? user.getRole().name() : com.edufelip.meer.core.auth.Role.USER.name();
+        return new AuthDtos.UserDto(String.valueOf(user.getId()), user.getDisplayName(), user.getEmail(), role);
     }
 }

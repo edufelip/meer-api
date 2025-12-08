@@ -400,8 +400,8 @@ public class ThriftStoreController {
     public ResponseEntity<Void> deleteStore(@PathVariable java.util.UUID id, @RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
-        if (user.getOwnedThriftStore() == null || !user.getOwnedThriftStore().getId().equals(store.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not owner");
+        if (!isAdmin(user) && (user.getOwnedThriftStore() == null || !user.getOwnedThriftStore().getId().equals(store.getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
         }
         if (store.getPhotos() != null) {
             store.getPhotos().forEach(p -> {
@@ -412,6 +412,10 @@ public class ThriftStoreController {
         }
         thriftStoreRepository.delete(store);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isAdmin(com.edufelip.meer.core.auth.AuthUser user) {
+        return user.getRole() != null && user.getRole() == com.edufelip.meer.core.auth.Role.ADMIN;
     }
 
 

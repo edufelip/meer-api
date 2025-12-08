@@ -258,7 +258,7 @@ public class StoreSeeder implements CommandLineRunner {
                 )
         );
         // attach and persist
-        ref.setContents(contents);
+//        ref.setContents(contents);
         storeRepo.save(ref);
     }
 }

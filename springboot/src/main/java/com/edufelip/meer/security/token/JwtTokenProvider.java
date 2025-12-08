@@ -1,6 +1,7 @@
 package com.edufelip.meer.security.token;
 
 import com.edufelip.meer.core.auth.AuthUser;
+import com.edufelip.meer.core.auth.Role;
 import com.edufelip.meer.security.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -30,6 +31,7 @@ public class JwtTokenProvider implements TokenProvider {
                 .setSubject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("name", user.getDisplayName())
+                .claim("role", user.getRole() != null ? user.getRole().name() : Role.USER.name())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -45,6 +47,7 @@ public class JwtTokenProvider implements TokenProvider {
                 .claim("type", "refresh")
                 .claim("email", user.getEmail())
                 .claim("name", user.getDisplayName())
+                .claim("role", user.getRole() != null ? user.getRole().name() : Role.USER.name())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -56,7 +59,12 @@ public class JwtTokenProvider implements TokenProvider {
         try {
             var claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
             UUID userId = UUID.fromString(claims.getSubject());
-            return new TokenPayload(userId, (String) claims.get("email"), (String) claims.get("name"));
+            Role role = Role.USER;
+            Object roleClaim = claims.get("role");
+            if (roleClaim instanceof String s) {
+                try { role = Role.valueOf(s); } catch (IllegalArgumentException ignored) {}
+            }
+            return new TokenPayload(userId, (String) claims.get("email"), (String) claims.get("name"), role);
         } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidTokenException();
         }
@@ -68,7 +76,12 @@ public class JwtTokenProvider implements TokenProvider {
             var claims = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
             if (!"refresh".equals(claims.get("type"))) throw new InvalidRefreshTokenException();
             UUID userId = UUID.fromString(claims.getSubject());
-            return new TokenPayload(userId, (String) claims.get("email"), (String) claims.get("name"));
+            Role role = Role.USER;
+            Object roleClaim = claims.get("role");
+            if (roleClaim instanceof String s) {
+                try { role = Role.valueOf(s); } catch (IllegalArgumentException ignored) {}
+            }
+            return new TokenPayload(userId, (String) claims.get("email"), (String) claims.get("name"), role);
         } catch (JwtException | IllegalArgumentException ex) {
             throw new InvalidRefreshTokenException();
         }

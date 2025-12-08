@@ -44,7 +44,8 @@ public class ThriftStore {
     @Embedded
     private Social social;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<String> categories;
 
     private String neighborhood;

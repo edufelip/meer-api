@@ -8,7 +8,7 @@ public class AuthDtos {
     public record RefreshRequest(String refreshToken) {}
     public record ForgotPasswordRequest(String email) {}
 
-    public record UserDto(String id, String name, String email) {}
+    public record UserDto(String id, String name, String email, String role) {}
 
     public record AuthResponse(String token, String refreshToken, UserDto user) {}
 }

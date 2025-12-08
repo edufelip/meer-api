@@ -7,6 +7,7 @@ import com.edufelip.meer.domain.GetGuideContentsByThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.auth.AppleLoginUseCase;
+import com.edufelip.meer.domain.auth.DashboardLoginUseCase;
 import com.edufelip.meer.domain.auth.ForgotPasswordUseCase;
 import com.edufelip.meer.domain.auth.GetProfileUseCase;
 import com.edufelip.meer.domain.auth.GoogleLoginUseCase;
@@ -19,6 +20,7 @@ import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.security.GoogleClientProperties;
 import com.edufelip.meer.security.JwtProperties;
+import com.edufelip.meer.security.DashboardAdminGuardFilter;
 import com.edufelip.meer.security.RequestGuardsFilter;
 import com.edufelip.meer.security.SecurityProperties;
 import com.edufelip.meer.security.token.JwtTokenProvider;
@@ -63,6 +65,11 @@ public class AppConfig {
     @Bean
     public LoginUseCase loginUseCase(AuthUserRepository repo, PasswordEncoder encoder, TokenProvider tokenProvider) {
         return new LoginUseCase(repo, encoder, tokenProvider);
+    }
+
+    @Bean
+    public DashboardLoginUseCase dashboardLoginUseCase(AuthUserRepository repo, PasswordEncoder encoder, TokenProvider tokenProvider) {
+        return new DashboardLoginUseCase(repo, encoder, tokenProvider);
     }
 
     @Bean
@@ -117,6 +124,13 @@ public class AppConfig {
     public FilterRegistrationBean<RequestResponseLoggingFilter> requestResponseLoggingFilter() {
         FilterRegistrationBean<RequestResponseLoggingFilter> registration = new FilterRegistrationBean<>(new RequestResponseLoggingFilter());
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1); // run right after guards
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<DashboardAdminGuardFilter> dashboardAdminGuardFilter(TokenProvider tokenProvider, AuthUserRepository authUserRepository) {
+        FilterRegistrationBean<DashboardAdminGuardFilter> registration = new FilterRegistrationBean<>(new DashboardAdminGuardFilter(tokenProvider, authUserRepository));
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 2); // after logging
         return registration;
     }
 }
