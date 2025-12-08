@@ -60,6 +60,10 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveBaseName.set("meer")
+}
+
 flyway {
     val env = System.getenv()
     val dbHost = env["DB_HOST"]
