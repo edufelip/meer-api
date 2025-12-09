@@ -20,6 +20,12 @@ public class RequestGuardsFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws jakarta.servlet.ServletException, java.io.IOException {
+        // Preflight requests should bypass auth/header guards
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (isPublicAuthPath(request)) {
             try {
                 filterChain.doFilter(request, response);

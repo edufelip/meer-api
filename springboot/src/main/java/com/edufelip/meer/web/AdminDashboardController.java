@@ -5,26 +5,19 @@ import com.edufelip.meer.core.auth.Role;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
-import com.edufelip.meer.dto.AdminUserDto;
-import com.edufelip.meer.dto.GuideContentDto;
-import com.edufelip.meer.dto.PageResponse;
-import com.edufelip.meer.dto.ThriftStoreDto;
-import com.edufelip.meer.dto.DashboardStoreSummaryDto;
-import com.edufelip.meer.dto.ProfileDto;
+import com.edufelip.meer.dto.*;
 import com.edufelip.meer.mapper.Mappers;
-import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/dashboard")
