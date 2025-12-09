@@ -79,6 +79,16 @@ jobs:
       - name: Rename jar with version
         run: mv springboot/build/libs/meer-*.jar springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
 
+      - name: Cleanup old backups and tmp on prod host
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.PROD_SSH_HOST }}
+          username: ${{ env.PROD_SSH_USER }}
+          key: ${{ env.PROD_SSH_KEY }}
+          script: |
+            sudo rm -rf /opt/meer-prod/meer.jar.bak.* /tmp/meer-prod-* || true
+            sudo journalctl --vacuum-time=7d || true
+
       - name: Copy jar to prod host
         uses: appleboy/scp-action@v0.1.7
         with:

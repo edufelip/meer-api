@@ -78,6 +78,16 @@ jobs:
       - name: Rename jar with version
         run: mv springboot/build/libs/meer-*.jar springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
 
+      - name: Cleanup old backups and tmp on QA host
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ env.QA_SSH_HOST }}
+          username: ${{ env.QA_SSH_USER }}
+          key: ${{ env.QA_SSH_KEY }}
+          script: |
+            sudo rm -rf /opt/meer-dev/meer.jar.bak.* /tmp/meer-qa-* || true
+            sudo journalctl --vacuum-time=7d || true
+
       - name: Copy jar to QA host
         uses: appleboy/scp-action@v0.1.7
         with:
