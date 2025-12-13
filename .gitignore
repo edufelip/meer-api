@@ -6,6 +6,7 @@ HELP.md
 build/
 springboot/build/
 springboot/.env
+springboot/.env.dev
 springboot/.gradle-temp/
 uploads/
 !gradle/wrapper/gradle-wrapper.jar

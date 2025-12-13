@@ -65,12 +65,9 @@ The application relies on environment variables defined in `springboot/.env`.
 | Variable | Description |
 | :--- | :--- |
 | `DB_HOST`, `DB_PORT` | PostgreSQL connection details. |
-| `SECURITY_REQUIRE_APP_HEADER` | If `true`, requires `X-App-Package` header on protected routes. |
-| `SECURITY_REQUIRE_APP_CHECK` | If `true`, enforces Firebase App Check token validation. |
 | `SECURITY_JWT_SECRET` | Secret key for signing JWTs (Min 32 bytes). |
 | `GOOGLE_*_CLIENT_ID` | OAuth client IDs for Google Sign-In. |
 | `MEER_CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for CORS (set your Vercel domains). |
-| `MEER_POSTGIS_ENABLED` | Enable PostGIS geography KNN queries for /nearby. |
 
 *See `.env.example` for the full list.*
 
@@ -167,9 +164,6 @@ Pagination in admin APIs is 0-based: send `page=0` for the first page; responses
 
 - **Public Routes:** Auth endpoints (`/auth/*`).
 - **Protected Routes:** All others pass through `RequestGuardsFilter`.
-  - **App Check:** Verified if `SECURITY_REQUIRE_APP_CHECK=true`.
-  - **App Header:** `X-App-Package` checked if `SECURITY_REQUIRE_APP_HEADER=true`.
-  - **JWT:** Bearer token required unless `SECURITY_DISABLE_AUTH=true`.
 
 ## ⚡ Performance & Data
 
@@ -184,11 +178,10 @@ Pagination in admin APIs is 0-based: send `page=0` for the first page; responses
 
 **Issue: `function geography(geometry) does not exist`**
 - **Cause:** PostGIS extension is missing in your Postgres instance.
-- **Fix:** Install PostGIS packages, run `CREATE EXTENSION IF NOT EXISTS postgis;` and optionally `CREATE INDEX thrift_store_geog_idx ON thrift_store USING GIST (geography(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)));` then start the app with `MEER_POSTGIS_ENABLED=true`.
+- **Fix:** Install PostGIS packages, run `CREATE EXTENSION IF NOT EXISTS postgis;` and optionally `CREATE INDEX thrift_store_geog_idx ON thrift_store USING GIST (geography(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)));` then start the app.
 
 **Issue: 403 Forbidden on Localhost**
 - **Cause:** Missing Auth token or App Headers.
-- **Fix:** Ensure you are sending `Authorization: Bearer <token>` and `X-App-Package` (if enabled). Or set `SECURITY_DISABLE_AUTH=true` in `.env` for testing.
 
 ## 🤝 Contributing
 

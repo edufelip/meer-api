@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/.env" ]; then
-  export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+ENV_FILE="${ENV_FILE:-.env}"
+if [ -f "$SCRIPT_DIR/$ENV_FILE" ]; then
+  export $(grep -v '^#' "$SCRIPT_DIR/$ENV_FILE" | xargs)
 fi
 if [ -z "${JAVA_HOME:-}" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
   export JAVA_HOME=$(/usr/libexec/java_home -v 17)

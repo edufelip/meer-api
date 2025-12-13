@@ -2,4 +2,4 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-ENV_FILE=./springboot/.env.dev ./springboot/run-local.sh
+ENV_FILE=./springboot/.env ./springboot/run-local.sh

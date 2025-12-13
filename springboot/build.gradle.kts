@@ -74,8 +74,7 @@ flyway {
     user = env["DB_USER"]
     password = env["DB_PASSWORD"]
 
-    val includeDev = (env["SPRING_PROFILES_ACTIVE"]?.split(',')?.contains("local-db") == true) ||
-            (env["FLYWAY_INCLUDE_DEV"] == "true")
+    val includeDev = (env["SPRING_PROFILES_ACTIVE"]?.split(',')?.contains("local-db") == true)
     val prodPath = "filesystem:src/main/resources/db/migration"
     val devPath = "filesystem:src/main/resources/db/dev"
     locations = if (includeDev) arrayOf(prodPath, devPath) else arrayOf(prodPath)

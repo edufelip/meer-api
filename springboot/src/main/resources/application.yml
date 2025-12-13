@@ -16,9 +16,9 @@ spring:
     show-sql: true
 
 security:
-  requireAppHeader: ${SECURITY_REQUIRE_APP_HEADER:true}
-  requireAppCheck: ${SECURITY_REQUIRE_APP_CHECK:true}
-  disableAuth: ${SECURITY_DISABLE_AUTH:false}
+  requireAppHeader: true
+  requireAppCheck: true
+  disableAuth: false
   jwt:
     secret: ${SECURITY_JWT_SECRET:change-me-please-change-me-please-change-me-123456789012345678901234}
     accessTtlMinutes: ${SECURITY_JWT_ACCESS_TTL_MINUTES:60}
@@ -29,9 +29,6 @@ security:
     webClientId: ${GOOGLE_WEB_CLIENT_ID:}
 
 meer:
-  seed:
-    stores: ${MEER_SEED_STORES:true}
-    categories: ${MEER_SEED_CATEGORIES:true}
   cors:
     allowed-origins: ${MEER_CORS_ALLOWED_ORIGINS:}
 

@@ -11,38 +11,80 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-latest
     environment: production
-    env:
-      PROD_DB_HOST: ${{ secrets.PROD_DB_HOST }}
-      PROD_DB_PORT: ${{ secrets.PROD_DB_PORT }}
-      PROD_DB_NAME: ${{ secrets.PROD_DB_NAME }}
-      PROD_DB_USER: ${{ secrets.PROD_DB_USER }}
-      PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
-      PROD_FLYWAY_INCLUDE_DEV: "false"
-      PROD_SPRING_PROFILES: prod
-      PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-      PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
-      PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
-      PROD_SERVICE: meer-prod
-      PROD_REMOTE_JAR: /opt/meer-prod/meer.jar
-      PROD_HEALTH_URL: https://meer.eduwaldo.com/actuator/health
+
     steps:
-      - name: Fail if required secrets are missing
-        run: |
-          required=(PROD_DB_HOST PROD_DB_PORT PROD_DB_NAME PROD_DB_USER PROD_DB_PASSWORD PROD_SSH_HOST PROD_SSH_USER PROD_SSH_KEY)
-          missing=()
-          for k in "${required[@]}"; do
-            v=$(printenv "$k")
-            [ -n "$v" ] || missing+=("$k")
-          done
-          if [ ${#missing[@]} -ne 0 ]; then
-            echo "Missing required secrets: ${missing[*]}" >&2
-            exit 1
-          fi
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Decode and load env from base64 secret
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${{ secrets.PROD_ENV_FILE_B64 }}" ]; then
+            echo "Missing required secret: PROD_ENV_FILE_B64" >&2
+            exit 1
+          fi
+
+          echo "${{ secrets.PROD_ENV_FILE_B64 }}" | base64 --decode > runtime-prod.env
+          chmod 600 runtime-prod.env
+
+          # Export everything into job env for subsequent steps
+          # - ignores blank lines and comments
+          # - supports values containing '='
+          while IFS= read -r line || [ -n "$line" ]; do
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+
+            [ -z "$line" ] && continue
+            case "$line" in
+              \#*) continue ;;
+            esac
+
+            case "$line" in
+              *=*)
+                key="${line%%=*}"
+                val="${line#*=}"
+                key="${key#"${key%%[![:space:]]*}"}"
+                key="${key%"${key##*[![:space:]]}"}"
+                printf '%s=%s\n' "$key" "$val" >> "$GITHUB_ENV"
+                ;;
+              *)
+                echo "Invalid line in decoded env file: $line" >&2
+                exit 1
+                ;;
+            esac
+          done < runtime-prod.env
+
+      - name: Fail if required vars are missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD
+            SPRING_PROFILES_ACTIVE
+            SECURITY_JWT_SECRET SECURITY_JWT_ACCESS_TTL_MINUTES SECURITY_JWT_REFRESH_TTL_DAYS
+            GOOGLE_ANDROID_CLIENT_ID GOOGLE_IOS_CLIENT_ID GOOGLE_WEB_CLIENT_ID
+            GOOGLE_APPLICATION_CREDENTIALS
+            GCS_BUCKET GCS_PUBLIC_BASE_URL GCS_SIGNED_URL_TTL_MINUTES GCS_AVATARS_PREFIX
+            MEER_CORS_ALLOWED_ORIGINS
+            SSH_HOST SSH_USER SSH_KEY
+            SERVICE REMOTE_JAR HEALTH_URL
+          )
+
+          missing=()
+          for k in "${required[@]}"; do
+            v="$(printenv "$k" || true)"
+            [ -n "$v" ] || missing+=("$k")
+          done
+
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "Missing required vars: ${missing[*]}" >&2
+            exit 1
+          fi
+
       - name: Set build version
-        run: echo "SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+        run: echo "SHA_SHORT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -53,25 +95,9 @@ jobs:
 
       - name: Run Flyway migrations on prod DB
         run: ./gradlew :springboot:flywayMigrate
-        env:
-          DB_HOST: ${{ env.PROD_DB_HOST }}
-          DB_PORT: ${{ env.PROD_DB_PORT }}
-          DB_NAME: ${{ env.PROD_DB_NAME }}
-          DB_USER: ${{ env.PROD_DB_USER }}
-          DB_PASSWORD: ${{ env.PROD_DB_PASSWORD }}
-          SPRING_PROFILES_ACTIVE: ${{ env.PROD_SPRING_PROFILES }}
-          FLYWAY_INCLUDE_DEV: ${{ env.PROD_FLYWAY_INCLUDE_DEV }}
 
       - name: Flyway info (out-of-order check)
         run: ./gradlew :springboot:flywayInfo
-        env:
-          DB_HOST: ${{ env.PROD_DB_HOST }}
-          DB_PORT: ${{ env.PROD_DB_PORT }}
-          DB_NAME: ${{ env.PROD_DB_NAME }}
-          DB_USER: ${{ env.PROD_DB_USER }}
-          DB_PASSWORD: ${{ env.PROD_DB_PASSWORD }}
-          SPRING_PROFILES_ACTIVE: ${{ env.PROD_SPRING_PROFILES }}
-          FLYWAY_INCLUDE_DEV: ${{ env.PROD_FLYWAY_INCLUDE_DEV }}
 
       - name: Build jar
         run: ./gradlew :springboot:bootJar
@@ -82,53 +108,65 @@ jobs:
       - name: Cleanup old backups and tmp on prod host
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ env.PROD_SSH_HOST }}
-          username: ${{ env.PROD_SSH_USER }}
-          key: ${{ env.PROD_SSH_KEY }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
           script: |
             set -e
-            # Remove stale backups and tmp deploy artifacts
             sudo rm -rf /opt/meer-prod/meer.jar.bak.* /tmp/meer-prod-* || true
-            # Free package cache
             sudo apt-get clean || true
-            # Trim journald to keep recent logs only and cap size
             sudo journalctl --vacuum-time=7d --vacuum-size=100M || true
-            # Force logrotate (helps compress large rotated syslog)
             sudo logrotate -f /etc/logrotate.conf || true
-            # Ensure previous big syslog file is compressed if present
             sudo gzip -f /var/log/syslog.1 2>/dev/null || true
-            # Show space so the next SCP step can rely on it
             df -h / /tmp /var || true
 
       - name: Copy jar to prod host
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ env.PROD_SSH_HOST }}
-          username: ${{ env.PROD_SSH_USER }}
-          key: ${{ env.PROD_SSH_KEY }}
-          source: "springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar"
-          target: "/tmp/meer-prod-${{ env.SHA_SHORT }}.jar"
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          source: springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
+          target: /tmp/meer-prod-${{ env.SHA_SHORT }}.jar
           strip_components: 3
+
+      - name: Copy runtime .env to prod host
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          source: runtime-prod.env
+          target: /tmp/runtime-prod.env
 
       - name: Restart service on prod
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ env.PROD_SSH_HOST }}
-          username: ${{ env.PROD_SSH_USER }}
-          key: ${{ env.PROD_SSH_KEY }}
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
           script: |
-            if [ -f ${{ env.PROD_REMOTE_JAR }} ]; then
-              sudo cp ${{ env.PROD_REMOTE_JAR }} ${{ env.PROD_REMOTE_JAR }}.bak
+            set -e
+
+            if [ -f /tmp/runtime-prod.env ]; then
+              sudo mv /tmp/runtime-prod.env /opt/meer-prod/.env
+              sudo chown meerprod:meerprod /opt/meer-prod/.env
+              sudo chmod 600 /opt/meer-prod/.env
             fi
-            sudo mv /tmp/meer-prod-${{ env.SHA_SHORT }}.jar ${{ env.PROD_REMOTE_JAR }}
-            sudo chown meerprod:meerprod ${{ env.PROD_REMOTE_JAR }}
-            sudo systemctl restart ${{ env.PROD_SERVICE }}
+
+            if [ -f "${{ env.REMOTE_JAR }}" ]; then
+              sudo cp "${{ env.REMOTE_JAR }}" "${{ env.REMOTE_JAR }}.bak"
+            fi
+
+            sudo mv "/tmp/meer-prod-${{ env.SHA_SHORT }}.jar" "${{ env.REMOTE_JAR }}"
+            sudo chown meerprod:meerprod "${{ env.REMOTE_JAR }}"
+            sudo systemctl restart "${{ env.SERVICE }}"
 
       - name: Smoke test (health)
         if: ${{ success() }}
         run: |
           for i in {1..40}; do
-            status=$(curl -sSL -o /tmp/health.json -w "%{http_code}" ${{ env.PROD_HEALTH_URL }}) || true
+            status=$(curl -sSL -o /tmp/health.json -w "%{http_code}" "${{ env.HEALTH_URL }}") || true
             if [ "$status" = "200" ] && grep -q '"status"[[:space:]]*:[[:space:]]*"UP"' /tmp/health.json; then
               cat /tmp/health.json
               exit 0
