@@ -68,7 +68,6 @@ jobs:
             GOOGLE_APPLICATION_CREDENTIALS
             GCS_BUCKET GCS_PUBLIC_BASE_URL GCS_SIGNED_URL_TTL_MINUTES GCS_AVATARS_PREFIX
             MEER_CORS_ALLOWED_ORIGINS
-            SSH_HOST SSH_USER SSH_KEY
             SERVICE REMOTE_JAR HEALTH_URL
           )
 
@@ -108,9 +107,9 @@ jobs:
       - name: Cleanup old backups and tmp on prod host
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
             sudo rm -rf /opt/meer-prod/meer.jar.bak.* /tmp/meer-prod-* || true
@@ -123,9 +122,9 @@ jobs:
       - name: Copy jar to prod host
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           source: springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
           target: /tmp/meer-prod-${{ env.SHA_SHORT }}.jar
           strip_components: 3
@@ -133,18 +132,18 @@ jobs:
       - name: Copy runtime .env to prod host
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           source: .env
           target: /tmp/.env
 
       - name: Restart service on prod
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ env.SSH_HOST }}
-          username: ${{ env.SSH_USER }}
-          key: ${{ env.SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
 
