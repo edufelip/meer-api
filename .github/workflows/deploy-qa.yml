@@ -26,7 +26,7 @@ jobs:
             exit 1
           fi
 
-          echo "${{ secrets.PROD_ENV_FILE_B64 }}" | tr -d '\r\n\t ' | base64 --decode > .env
+          echo "${{ secrets.DEV_ENV_FILE_B64 }}" | tr -d '\r\n\t ' | base64 --decode > .env
 
           # Export everything into job env for subsequent steps
           # - ignores blank lines and comments
@@ -91,7 +91,7 @@ jobs:
           java-version: 17
           cache: gradle
 
-      - name: Run Flyway migrations on prod DB
+      - name: Run Flyway migrations on dev DB
         run: ./gradlew :springboot:flywayMigrate
 
       - name: Flyway info (out-of-order check)
@@ -103,7 +103,7 @@ jobs:
       - name: Rename jar with version
         run: mv springboot/build/libs/meer-*.jar springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
 
-      - name: Cleanup old backups and tmp on prod host
+      - name: Cleanup old backups and tmp on dev host
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -111,24 +111,24 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-            sudo rm -rf /opt/meer-prod/meer.jar.bak.* /tmp/meer-prod-* || true
+            sudo rm -rf /opt/meer-dev/meer.jar.bak.* /tmp/meer-dev-* || true
             sudo apt-get clean || true
             sudo journalctl --vacuum-time=7d --vacuum-size=100M || true
             sudo logrotate -f /etc/logrotate.conf || true
             sudo gzip -f /var/log/syslog.1 2>/dev/null || true
             df -h / /tmp /var || true
 
-      - name: Copy jar to prod host
+      - name: Copy jar to dev host
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: springboot/build/libs/meer-${{ env.SHA_SHORT }}.jar
-          target: /tmp/meer-prod-${{ env.SHA_SHORT }}.jar
+          target: /tmp/meer-dev-${{ env.SHA_SHORT }}.jar
           strip_components: 3
 
-      - name: Copy runtime .env to prod host
+      - name: Copy runtime .env to dev host
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -137,7 +137,7 @@ jobs:
           source: .env
           target: /tmp/.env
 
-      - name: Restart service on prod
+      - name: Restart service on dev
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -147,17 +147,17 @@ jobs:
             set -e
 
             if [ -f /tmp/.env ]; then
-              sudo mv /tmp/.env /opt/meer-prod/.env
-              sudo chown meerprod:meerprod /opt/meer-prod/.env
-              sudo chmod 600 /opt/meer-prod/.env
+              sudo mv /tmp/.env /opt/meer-dev/.env
+              sudo chown meerdev:meerdev /opt/meer-dev/.env
+              sudo chmod 600 /opt/meer-dev/.env
             fi
 
             if [ -f "${{ env.REMOTE_JAR }}" ]; then
               sudo cp "${{ env.REMOTE_JAR }}" "${{ env.REMOTE_JAR }}.bak"
             fi
 
-            sudo mv "/tmp/meer-prod-${{ env.SHA_SHORT }}.jar" "${{ env.REMOTE_JAR }}"
-            sudo chown meerprod:meerprod "${{ env.REMOTE_JAR }}"
+            sudo mv "/tmp/meer-dev-${{ env.SHA_SHORT }}.jar" "${{ env.REMOTE_JAR }}"
+            sudo chown meerdev:meerdev "${{ env.REMOTE_JAR }}"
             sudo systemctl restart "${{ env.SERVICE }}"
 
       - name: Smoke test (health)
