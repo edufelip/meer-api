@@ -29,12 +29,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
-import java.util.Optional;
 import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/profile")
@@ -46,6 +46,8 @@ public class ProfileController {
     private final StoreFeedbackRepository storeFeedbackRepository;
     private final ThriftStoreRepository thriftStoreRepository;
     private final GcsStorageService gcsStorageService;
+    private static final Set<String> ALLOWED_AVATAR_CONTENT_TYPES = Set.of("image/jpeg", "image/png", "image/webp");
+    private static final long MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
     public ProfileController(GetProfileUseCase getProfileUseCase,
                              UpdateProfileUseCase updateProfileUseCase,
@@ -68,7 +70,7 @@ public class ProfileController {
         return Mappers.toProfileDto(user, true);
     }
 
-    @PostMapping("/avatar/upload")
+    @PostMapping(value = "/avatar/upload", consumes = MediaType.APPLICATION_JSON_VALUE)
     public AvatarUploadResponse requestAvatarUpload(@RequestHeader("Authorization") String authHeader,
                                                     @RequestBody(required = false) java.util.Map<String, String> body) {
         String token = extractBearer(authHeader);
@@ -92,14 +94,15 @@ public class ProfileController {
                                     @RequestBody UpdateProfileRequest body) {
         String token = extractBearer(authHeader);
         if (body == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body required");
-        if (body.avatarUrl() != null && !body.avatarUrl().isBlank()) {
-            // Accept only URLs pointing to our configured bucket/prefix
-            if (!body.avatarUrl().contains("/" + gcsStorageService.getBucket() + "/")
-                    && !body.avatarUrl().contains(gcsStorageService.publicBaseUrl())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid avatar URL");
-            }
-        }
-        var user = updateProfileUseCase.execute(token, body);
+        var currentUser = getProfileUseCase.execute(token);
+        String normalizedAvatar = normalizeAvatarUrl(body.avatarUrl(), currentUser.getId());
+        var user = updateProfileUseCase.execute(token, new UpdateProfileRequest(
+                body.name(),
+                normalizedAvatar,
+                body.bio(),
+                body.notifyNewStores(),
+                body.notifyPromos()
+        ));
         return Mappers.toProfileDto(user, true);
     }
 
@@ -109,6 +112,7 @@ public class ProfileController {
                                    @RequestPart(name = "bio", required = false) String bio,
                                    @RequestPart(name = "notifyNewStores", required = false) String notifyNewStores,
                                    @RequestPart(name = "notifyPromotions", required = false) String notifyPromotions,
+                                   @RequestPart(name = "avatarUrl", required = false) String avatarUrl,
                                    @RequestPart(name = "avatar", required = false) MultipartFile avatar) {
         String token = extractBearer(authHeader);
 
@@ -116,31 +120,15 @@ public class ProfileController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "bio exceeds 200 characters");
         }
 
-        String avatarUrl = null;
+        var currentUser = getProfileUseCase.execute(token);
         if (avatar != null && !avatar.isEmpty()) {
-            var ctype = avatar.getContentType();
-            if (ctype == null || !(ctype.equalsIgnoreCase("image/jpeg") || ctype.equalsIgnoreCase("image/png"))) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "avatar must be jpeg or png");
-            }
-            if (avatar.getSize() > 5 * 1024 * 1024) {
-                throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "avatar too large (max 5MB)");
-            }
-            try {
-                Path uploadDir = Path.of("uploads", "avatars");
-                Files.createDirectories(uploadDir);
-                String ext = ctype.equalsIgnoreCase("image/png") ? ".png" : ".jpg";
-                String filename = UUID.randomUUID() + ext;
-                Path target = uploadDir.resolve(filename);
-                Files.write(target, avatar.getBytes());
-                avatarUrl = "/uploads/avatars/" + filename;
-            } catch (IOException e) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to save avatar");
-            }
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Upload avatar via /profile/avatar/upload and send avatarUrl in this request");
         }
+        String normalizedAvatar = normalizeAvatarUrl(avatarUrl, currentUser.getId());
 
         var req = new UpdateProfileRequest(
                 name,
-                avatarUrl,
+                normalizedAvatar,
                 bio,
                 notifyNewStores != null ? Boolean.valueOf(notifyNewStores) : null,
                 notifyPromotions != null ? Boolean.valueOf(notifyPromotions) : null
@@ -203,5 +191,26 @@ public class ProfileController {
         } catch (Exception ignored) {
             return false;
         }
+    }
+
+    private String normalizeAvatarUrl(String avatarUrl, UUID userId) {
+        if (avatarUrl == null || avatarUrl.isBlank()) return null;
+        String fileKey = gcsStorageService.extractFileKey(avatarUrl);
+        if (fileKey == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid avatar URL");
+        }
+        String expectedPrefix = gcsStorageService.getAvatarsPrefix() + "/" + userId;
+        if (!fileKey.startsWith(expectedPrefix)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "avatar must belong to the requesting user");
+        }
+        var blob = gcsStorageService.fetchRequiredObject(fileKey);
+        String ctype = blob.getContentType();
+        if (ctype == null || ALLOWED_AVATAR_CONTENT_TYPES.stream().noneMatch(ctype::equalsIgnoreCase)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "avatar must be jpeg, png or webp");
+        }
+        if (blob.getSize() > MAX_AVATAR_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "avatar too large (max 5MB)");
+        }
+        return gcsStorageService.publicUrl(fileKey);
     }
 }

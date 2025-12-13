@@ -96,6 +96,17 @@ public class GcsStorageService {
         return publicBaseUrl;
     }
 
+    public String getAvatarsPrefix() {
+        return avatarsPrefix;
+    }
+
+    /**
+     * Extract the object key from a GCS URL (signed or public). Returns null when it does not point to our bucket.
+     */
+    public String extractFileKey(String url) {
+        return deriveKey(url);
+    }
+
     public String getBucket() {
         return bucket;
     }
@@ -115,12 +126,17 @@ public class GcsStorageService {
         if (url == null) return null;
         // Strip bucket-hosted URL patterns
         if (url.startsWith(publicBaseUrl + "/")) {
-            return url.substring((publicBaseUrl + "/").length());
+            return stripQuery(url.substring((publicBaseUrl + "/").length()));
         }
         String gsBase = "https://storage.googleapis.com/" + bucket + "/";
         if (url.startsWith(gsBase)) {
-            return url.substring(gsBase.length());
+            return stripQuery(url.substring(gsBase.length()));
         }
         return null;
+    }
+
+    private String stripQuery(String path) {
+        int idx = path.indexOf('?');
+        return idx >= 0 ? path.substring(0, idx) : path;
     }
 }
