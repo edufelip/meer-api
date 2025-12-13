@@ -86,8 +86,19 @@ jobs:
           username: ${{ env.PROD_SSH_USER }}
           key: ${{ env.PROD_SSH_KEY }}
           script: |
+            set -e
+            # Remove stale backups and tmp deploy artifacts
             sudo rm -rf /opt/meer-prod/meer.jar.bak.* /tmp/meer-prod-* || true
-            sudo journalctl --vacuum-time=7d || true
+            # Free package cache
+            sudo apt-get clean || true
+            # Trim journald to keep recent logs only and cap size
+            sudo journalctl --vacuum-time=7d --vacuum-size=100M || true
+            # Force logrotate (helps compress large rotated syslog)
+            sudo logrotate -f /etc/logrotate.conf || true
+            # Ensure previous big syslog file is compressed if present
+            sudo gzip -f /var/log/syslog.1 2>/dev/null || true
+            # Show space so the next SCP step can rely on it
+            df -h / /tmp /var || true
 
       - name: Copy jar to prod host
         uses: appleboy/scp-action@v0.1.7
