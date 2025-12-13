@@ -23,6 +23,8 @@ import com.edufelip.meer.service.GcsStorageService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +64,7 @@ public class ThriftStoreController {
     private final TokenProvider tokenProvider;
     private final StoreFeedbackService storeFeedbackService;
     private final GcsStorageService gcsStorageService;
+    private static final Logger log = LoggerFactory.getLogger(ThriftStoreController.class);
     private static final int MAX_PHOTO_COUNT = 10;
     private static final long MAX_PHOTO_BYTES = 2 * 1024 * 1024L; // 2MB cap to align with client compression requirement
     private static final Set<String> SUPPORTED_CONTENT_TYPES = Set.of(
@@ -269,7 +272,9 @@ public class ThriftStoreController {
             for (Integer delId : deleteIds) {
                 var removed = existingById.remove(delId);
                 if (removed != null) {
-                    gcsStorageService.deleteByUrl(removed.getUrl());
+                    log.info("Deleting store photo (explicit) storeId={} photoId={} key={}",
+                            storeId, removed.getId(), safeKey(removed.getUrl()));
+                    deletePhotoAsset(removed.getUrl());
                 }
             }
         }
@@ -320,6 +325,15 @@ public class ThriftStoreController {
             store.setCoverImageUrl(null);
         }
         thriftStoreRepository.save(store);
+
+        // Clean up any photos not kept nor explicitly deleted (implicit removals)
+        if (!existingById.isEmpty()) {
+            existingById.values().forEach(photo -> {
+                log.info("Deleting store photo (implicit) storeId={} photoId={} key={}",
+                        storeId, photo.getId(), safeKey(photo.getUrl()));
+                deletePhotoAsset(photo.getUrl());
+            });
+        }
 
         var refreshed = thriftStoreRepository.findById(storeId).orElseThrow();
         boolean isFav = user.getFavorites().stream().anyMatch(f -> f.getId().equals(storeId));
@@ -405,9 +419,7 @@ public class ThriftStoreController {
         }
         if (store.getPhotos() != null) {
             store.getPhotos().forEach(p -> {
-                if (!deleteLocalIfUploads(p.getUrl())) {
-                    gcsStorageService.deleteByUrl(p.getUrl());
-                }
+                deletePhotoAsset(p.getUrl());
             });
         }
         thriftStoreRepository.delete(store);
@@ -496,6 +508,22 @@ public class ThriftStoreController {
     private boolean isSupportedContentType(String ctype) {
         if (ctype == null) return false;
         return SUPPORTED_CONTENT_TYPES.contains(ctype.toLowerCase());
+    }
+
+    private void deletePhotoAsset(String url) {
+        if (url == null) return;
+        if (!deleteLocalIfUploads(url)) {
+            try {
+                gcsStorageService.deleteByUrl(url);
+            } catch (Exception ex) {
+                log.warn("Failed deleting store photo key={} error={}", safeKey(url), ex.getMessage());
+            }
+        }
+    }
+
+    private String safeKey(String url) {
+        String key = gcsStorageService.extractFileKey(url);
+        return key != null ? key : url;
     }
 
     private boolean deleteLocalIfUploads(String url) {
