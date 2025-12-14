@@ -207,6 +207,10 @@ public class AdminDashboardController {
 
     private void deleteStoreWithAssets(com.edufelip.meer.core.store.ThriftStore store, Set<UUID> processed) {
         if (!processed.add(store.getId())) return; // avoid duplicate deletes
+        // Remove dependent rows first to satisfy FK constraints
+        authUserRepository.deleteFavoritesByStoreId(store.getId());
+        storeFeedbackRepository.deleteByThriftStoreId(store.getId());
+
         if (store.getPhotos() != null) {
             store.getPhotos().forEach(p -> deletePhotoAsset(p.getUrl()));
         }

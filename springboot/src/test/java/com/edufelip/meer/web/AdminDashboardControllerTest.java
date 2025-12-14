@@ -87,6 +87,8 @@ class AdminDashboardControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(thriftStoreRepository, times(1)).delete(argThat(ts -> ts.getId().equals(storeId)));
+        verify(authUserRepository, times(1)).deleteFavoritesByStoreId(storeId);
+        verify(storeFeedbackRepository, times(1)).deleteByThriftStoreId(storeId);
         verify(storeFeedbackRepository, times(1)).deleteByUserId(targetId);
         verify(gcsStorageService, times(1)).deleteByUrl("https://storage.googleapis.com/bucket/avatar.png");
         verify(gcsStorageService, times(1)).deleteByUrl("https://storage.googleapis.com/bucket/photo-1.jpg");
