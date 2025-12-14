@@ -135,7 +135,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: .env
-          target: /tmp/.env
+          target: /tmp
 
       - name: Restart service on dev
         uses: appleboy/ssh-action@v1.0.0
