@@ -19,6 +19,8 @@ public interface StoreFeedbackRepository extends JpaRepository<StoreFeedback, In
         Long getCnt();
     }
 
+    void deleteByThriftStoreId(UUID storeId);
+
     @Query("select f.thriftStore.id as storeId, avg(f.score) as avgScore, count(f) as cnt from StoreFeedback f where f.thriftStore.id in :storeIds and f.score is not null group by f.thriftStore.id")
     List<AggregateView> aggregateByStoreIds(@Param("storeIds") List<UUID> storeIds);
 }

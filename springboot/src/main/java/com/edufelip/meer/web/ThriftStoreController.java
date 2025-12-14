@@ -23,6 +23,7 @@ import com.edufelip.meer.service.GcsStorageService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
+import com.edufelip.meer.domain.repo.StoreFeedbackRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -49,6 +50,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import com.edufelip.meer.core.store.ThriftStorePhoto;
+import jakarta.transaction.Transactional;
 
 @RestController
 @RequestMapping("/stores")
@@ -64,6 +66,7 @@ public class ThriftStoreController {
     private final TokenProvider tokenProvider;
     private final StoreFeedbackService storeFeedbackService;
     private final GcsStorageService gcsStorageService;
+    private final StoreFeedbackRepository storeFeedbackRepository;
     private static final Logger log = LoggerFactory.getLogger(ThriftStoreController.class);
     private static final int MAX_PHOTO_COUNT = 10;
     private static final long MAX_PHOTO_BYTES = 2 * 1024 * 1024L; // 2MB cap to align with client compression requirement
@@ -80,7 +83,8 @@ public class ThriftStoreController {
                                  com.edufelip.meer.domain.repo.AuthUserRepository authUserRepository,
                                  TokenProvider tokenProvider,
                                  StoreFeedbackService storeFeedbackService,
-                                 GcsStorageService gcsStorageService) {
+                                 GcsStorageService gcsStorageService,
+                                 StoreFeedbackRepository storeFeedbackRepository) {
         this.getThriftStoreUseCase = getThriftStoreUseCase;
         this.getThriftStoresUseCase = getThriftStoresUseCase;
         this.getGuideContentsByThriftStoreUseCase = getGuideContentsByThriftStoreUseCase;
@@ -91,6 +95,7 @@ public class ThriftStoreController {
         this.tokenProvider = tokenProvider;
         this.storeFeedbackService = storeFeedbackService;
         this.gcsStorageService = gcsStorageService;
+        this.storeFeedbackRepository = storeFeedbackRepository;
     }
 
     @GetMapping
@@ -411,12 +416,27 @@ public class ThriftStoreController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteStore(@PathVariable java.util.UUID id, @RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
         if (!isAdmin(user) && (user.getOwnedThriftStore() == null || !user.getOwnedThriftStore().getId().equals(store.getId()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
         }
+
+        // Detach owner linkage to avoid FK violations
+        if (store.getOwner() != null) {
+            var owner = store.getOwner();
+            if (owner.getOwnedThriftStore() != null && id.equals(owner.getOwnedThriftStore().getId())) {
+                owner.setOwnedThriftStore(null);
+                authUserRepository.save(owner);
+            }
+        }
+
+        // Remove favorites and feedback referencing this store
+        authUserRepository.deleteFavoritesByStoreId(id);
+        storeFeedbackRepository.deleteByThriftStoreId(id);
+
         if (store.getPhotos() != null) {
             store.getPhotos().forEach(p -> {
                 deletePhotoAsset(p.getUrl());
