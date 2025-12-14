@@ -159,9 +159,10 @@ jobs:
             sudo mv "/tmp/meer-${{ env.SHA_SHORT }}.jar" "${{ env.REMOTE_JAR }}"
             sudo chown meerdev:meerdev "${{ env.REMOTE_JAR }}"
 
-            cred_path="$(grep '^GOOGLE_APPLICATION_CREDENTIALS=' /opt/meer-dev/.env | head -n1 | cut -d= -f2-)"
+            cred_path="$(grep '^GOOGLE_APPLICATION_CREDENTIALS=' /opt/meer-dev/.env 2>/dev/null | head -n1 | cut -d= -f2-)"
+            [ -z "$cred_path" ] && cred_path="${GOOGLE_APPLICATION_CREDENTIALS:-}"
             if [ -z "$cred_path" ]; then
-              echo "GOOGLE_APPLICATION_CREDENTIALS not set in /opt/meer-dev/.env" >&2
+              echo "GOOGLE_APPLICATION_CREDENTIALS not set (checked /opt/meer-dev/.env and env var)" >&2
               exit 1
             fi
             if [ -z "${{ secrets.GCP_SA_B64 }}" ]; then
