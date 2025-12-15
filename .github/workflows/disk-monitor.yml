@@ -20,6 +20,9 @@ jobs:
             [ -n "$(printenv $k)" ] || { echo "Missing $k" >&2; exit 1; }
           done
 
+      - name: Debug SSH_HOST hash
+        run: echo -n "${SSH_HOST}" | sha1sum
+
       - name: Check disk usage on host
         uses: appleboy/ssh-action@v1.0.0
         with:
