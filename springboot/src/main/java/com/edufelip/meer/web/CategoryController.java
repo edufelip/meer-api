@@ -62,7 +62,7 @@ public class CategoryController {
                         null,
                         null,
                         store.getCategories(),
-                        store.getIsFavorite()
+                        null
                 ))
                 .toList();
 

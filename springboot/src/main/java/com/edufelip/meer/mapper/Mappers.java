@@ -30,7 +30,7 @@ public class Mappers {
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents) {
-        return toDto(store, includeContents, store.getIsFavorite(), null, null, null);
+        return toDto(store, includeContents, null, null, null, null);
     }
 
     public static ThriftStoreDto toDto(ThriftStore store, boolean includeContents, Boolean isFavoriteOverride) {

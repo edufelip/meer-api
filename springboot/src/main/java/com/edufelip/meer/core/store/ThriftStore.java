@@ -50,7 +50,6 @@ public class ThriftStore {
 
     private String neighborhood;
     private String badgeLabel;
-    private Boolean isFavorite;
     @Column(length = 1000)
     private String description;
 
@@ -80,7 +79,7 @@ public class ThriftStore {
     public ThriftStore(UUID id, String name, String tagline, String coverImageUrl, List<String> galleryUrls,
                        String addressLine, Double latitude, Double longitude, String openingHours,
                        Social social, List<String> categories,
-                       String neighborhood, String badgeLabel, Boolean isFavorite,
+                       String neighborhood, String badgeLabel,
                        String description, List<GuideContent> contents) {
         this.id = id;
         this.name = name;
@@ -95,7 +94,6 @@ public class ThriftStore {
         this.categories = categories;
         this.neighborhood = neighborhood;
         this.badgeLabel = badgeLabel;
-        this.isFavorite = isFavorite;
         this.description = description;
         this.contents = contents;
     }
@@ -115,7 +113,6 @@ public class ThriftStore {
     public List<String> getCategories() { return categories; }
     public String getNeighborhood() { return neighborhood; }
     public String getBadgeLabel() { return badgeLabel; }
-    public Boolean getIsFavorite() { return isFavorite; }
     public String getDescription() { return description; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
@@ -137,7 +134,6 @@ public class ThriftStore {
     public void setCategories(List<String> categories) { this.categories = categories; }
     public void setNeighborhood(String neighborhood) { this.neighborhood = neighborhood; }
     public void setBadgeLabel(String badgeLabel) { this.badgeLabel = badgeLabel; }
-    public void setIsFavorite(Boolean isFavorite) { this.isFavorite = isFavorite; }
     public void setDescription(String description) { this.description = description; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
