@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/stores/{storeId}/feedback")
@@ -43,7 +44,7 @@ public class StoreFeedbackController {
     // Upsert (create/update) feedback for current user on a store
     @PostMapping
     public FeedbackResponse upsert(@PathVariable java.util.UUID storeId,
-                                   @RequestBody FeedbackRequest body,
+                                   @RequestBody @Valid FeedbackRequest body,
                                    @RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(storeId)

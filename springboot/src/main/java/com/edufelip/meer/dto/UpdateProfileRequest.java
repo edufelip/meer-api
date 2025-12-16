@@ -1,9 +1,11 @@
 package com.edufelip.meer.dto;
 
+import jakarta.validation.constraints.Size;
+
 public record UpdateProfileRequest(
-        String name,
-        String avatarUrl,
-        String bio,
+        @Size(max = 120) String name,
+        @Size(max = 2048) String avatarUrl,
+        @Size(max = 200) String bio,
         Boolean notifyNewStores,
         Boolean notifyPromos
 ) {}

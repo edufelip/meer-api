@@ -12,6 +12,7 @@ import com.edufelip.meer.dto.AvatarUploadResponse;
 import com.edufelip.meer.mapper.Mappers;
 import com.edufelip.meer.service.GcsStorageService;
 import com.edufelip.meer.security.token.InvalidTokenException;
+import com.edufelip.meer.util.UrlValidatorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,7 +95,7 @@ public class ProfileController {
 
     @PutMapping
     public ProfileDto updateProfile(@RequestHeader("Authorization") String authHeader,
-                                    @RequestBody UpdateProfileRequest body) {
+                                    @RequestBody @Valid UpdateProfileRequest body) {
         String token = extractBearer(authHeader);
         if (body == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body required");
         var currentUser = getProfileUseCase.execute(token);
@@ -110,7 +112,7 @@ public class ProfileController {
 
     @PatchMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ProfileDto patchProfile(@RequestHeader("Authorization") String authHeader,
-                                   @RequestBody(required = false) UpdateProfileRequest body) {
+                                   @RequestBody(required = false) @Valid UpdateProfileRequest body) {
         String token = extractBearer(authHeader);
 
         if (body == null) {
@@ -228,6 +230,12 @@ public class ProfileController {
         if (blob.getSize() > MAX_AVATAR_BYTES) {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "avatar too large (max 5MB)");
         }
-        return gcsStorageService.publicUrl(fileKey);
+        String publicUrl = gcsStorageService.publicUrl(fileKey);
+        try {
+            UrlValidatorUtil.ensureHttpUrl(publicUrl, "avatarUrl");
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+        return publicUrl;
     }
 }

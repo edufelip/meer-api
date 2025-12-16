@@ -40,6 +40,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableConfigurationProperties({SecurityProperties.class, JwtProperties.class, GoogleClientProperties.class})
 public class AppConfig {
 
+
     @Bean
     public GetThriftStoreUseCase getThriftStoreUseCase(ThriftStoreRepository repo) { return new GetThriftStoreUseCase(repo); }
 
@@ -133,4 +134,5 @@ public class AppConfig {
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 2); // after logging
         return registration;
     }
+
 }

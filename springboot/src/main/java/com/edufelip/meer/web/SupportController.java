@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -28,7 +29,7 @@ public class SupportController {
     }
 
     @PostMapping("/contact")
-    public ResponseEntity<?> contact(@RequestBody(required = false) SupportContactRequest body) {
+    public ResponseEntity<?> contact(@RequestBody(required = false) @Valid SupportContactRequest body) {
         String validationError = validate(body);
         if (validationError != null) {
             return ResponseEntity.badRequest().body(Map.of("message", validationError));

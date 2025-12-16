@@ -1,3 +1,5 @@
 package com.edufelip.meer.dto;
 
-public record FeedbackRequest(Integer score, String body) {}
+import jakarta.validation.constraints.Size;
+
+public record FeedbackRequest(Integer score, @Size(max = 2000) String body) {}

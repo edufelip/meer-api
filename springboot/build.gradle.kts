@@ -46,6 +46,7 @@ dependencies {
     implementation("org.flywaydb:flyway-core:9.22.3")
     implementation("org.postgresql:postgresql")
     add("flyway", "org.postgresql:postgresql:42.7.4")
+    implementation("org.jsoup:jsoup:1.17.2")
     // Override vulnerable transitive protobuf to fixed version (CVE-2024-7254)
     implementation("com.google.protobuf:protobuf-java:4.28.2")
     // Override vulnerable transitive grpc-netty-shaded to fixed version (CVE-2025-55163)

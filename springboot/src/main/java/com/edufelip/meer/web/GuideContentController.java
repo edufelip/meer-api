@@ -15,6 +15,7 @@ import com.edufelip.meer.service.GcsStorageService;
 import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
+import com.edufelip.meer.util.UrlValidatorUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
@@ -92,7 +94,7 @@ public class GuideContentController {
     }
 
     @PostMapping
-    public GuideContentDto create(@RequestBody ContentCreateRequest body,
+    public GuideContentDto create(@RequestBody @Valid ContentCreateRequest body,
                                   @RequestHeader("Authorization") String authHeader) {
         var user = currentUser(authHeader);
         if (body == null || body.title() == null || body.title().isBlank()) {
@@ -155,7 +157,10 @@ public class GuideContentController {
         }
         if (body.getTitle() != null) content.setTitle(body.getTitle());
         if (body.getDescription() != null) content.setDescription(body.getDescription());
-        if (body.getImageUrl() != null) content.setImageUrl(body.getImageUrl());
+        if (body.getImageUrl() != null) {
+            validateHttpUrl(body.getImageUrl(), "imageUrl");
+            content.setImageUrl(body.getImageUrl());
+        }
         // keep default category/type if still null
         if (content.getCategoryLabel() == null) content.setCategoryLabel("general");
         if (content.getType() == null) content.setType("article");
@@ -184,5 +189,13 @@ public class GuideContentController {
             throw new InvalidTokenException();
         }
         return authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidTokenException::new);
+    }
+
+    private void validateHttpUrl(String url, String field) {
+        try {
+            UrlValidatorUtil.ensureHttpUrl(url, field);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -44,7 +45,7 @@ public class AdminCategoryController {
 
     @PostMapping
     public CategoryDto create(@RequestHeader("Authorization") String authHeader,
-                              @RequestBody CategoryUpsertRequest body) {
+                              @RequestBody @Valid CategoryUpsertRequest body) {
         requireAdmin(authHeader);
         validateBody(body, true, null);
         if (categoryRepository.existsById(body.id())) {
@@ -58,7 +59,7 @@ public class AdminCategoryController {
     @PutMapping("/{id}")
     public CategoryDto update(@RequestHeader("Authorization") String authHeader,
                               @PathVariable String id,
-                              @RequestBody CategoryUpsertRequest body) {
+                              @RequestBody @Valid CategoryUpsertRequest body) {
         requireAdmin(authHeader);
         validateBody(body, false, id);
         Category category = categoryRepository.findById(id)

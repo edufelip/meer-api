@@ -24,6 +24,7 @@ import com.edufelip.meer.security.token.InvalidTokenException;
 import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
 import com.edufelip.meer.domain.repo.StoreFeedbackRepository;
+import com.edufelip.meer.util.UrlValidatorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -170,7 +172,7 @@ public class ThriftStoreController {
     @PostMapping
     public ResponseEntity<ThriftStoreDto> create(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody StoreRequest body
+            @RequestBody @Valid StoreRequest body
     ) {
         var user = currentUser(authHeader);
         validateCreate(body);
@@ -189,6 +191,7 @@ public class ThriftStoreController {
         store.setTagline(body.getTagline());
         store.setNeighborhood(body.getNeighborhood());
         store.setCategories(normalizeCategories(body.getCategories()));
+        validateSocialUrls(body.getSocial());
 
         var saved = thriftStoreRepository.save(store);
 
@@ -376,7 +379,7 @@ public class ThriftStoreController {
     public ThriftStoreDto updateStore(
             @PathVariable java.util.UUID id,
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody StoreRequest body
+            @RequestBody @Valid StoreRequest body
     ) {
         var user = currentUser(authHeader);
         var store = thriftStoreRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
@@ -398,7 +401,10 @@ public class ThriftStoreController {
         if (body.getTagline() != null) store.setTagline(body.getTagline());
         if (body.getNeighborhood() != null) store.setNeighborhood(body.getNeighborhood());
         if (body.getCategories() != null) store.setCategories(normalizeCategories(body.getCategories()));
-        if (body.getSocial() != null) store.setSocial(body.getSocial());
+        if (body.getSocial() != null) {
+            validateSocialUrls(body.getSocial());
+            store.setSocial(body.getSocial());
+        }
 
         if (body.getLatitude() != null && body.getLongitude() != null) {
             store.setLatitude(body.getLatitude());
@@ -475,6 +481,17 @@ public class ThriftStoreController {
         if (body.getPhone() == null || body.getPhone().isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "phone is required");
         if (body.getLatitude() == null || body.getLongitude() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "latitude/longitude required or geocoding failed");
+        }
+    }
+
+    private void validateSocialUrls(Social social) {
+        if (social == null) return;
+        try {
+            UrlValidatorUtil.ensureHttpUrl(social.getWebsite(), "website");
+            UrlValidatorUtil.ensureHttpUrl(social.getFacebook(), "facebook");
+            UrlValidatorUtil.ensureHttpUrl(social.getInstagram(), "instagram");
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
         }
     }
 

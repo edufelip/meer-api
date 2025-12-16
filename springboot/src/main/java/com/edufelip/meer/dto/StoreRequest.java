@@ -1,19 +1,31 @@
 package com.edufelip.meer.dto;
 
 import com.edufelip.meer.core.store.Social;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public class StoreRequest {
+    @Size(max = 120)
     private String name;
+    @Size(max = 2000)
     private String description;
+    @Size(max = 256)
     private String openingHours;
+    @Size(max = 512)
     private String addressLine;
+    @Size(max = 32)
     private String phone;
+    @Email
+    @Size(max = 320)
     private String email;
+    @Size(max = 120)
     private String neighborhood;
+    @Size(max = 280)
     private String tagline;
     private Double latitude;
     private Double longitude;
+    @Size(max = 10)
     private List<String> categories;
     private Social social;
 
