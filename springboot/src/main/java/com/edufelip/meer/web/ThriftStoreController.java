@@ -493,9 +493,19 @@ public class ThriftStoreController {
         try {
             UrlValidatorUtil.ensureHttpUrl(social.getWebsite(), "website");
             UrlValidatorUtil.ensureHttpUrl(social.getFacebook(), "facebook");
-            UrlValidatorUtil.ensureHttpUrl(social.getInstagram(), "instagram");
+            ensureSingleWord(social.getInstagram(), "instagram");
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
+    private void ensureSingleWord(String value, String fieldName) {
+        if (value == null || value.isBlank()) return;
+        String trimmed = value.trim();
+        for (int i = 0; i < trimmed.length(); i++) {
+            if (Character.isWhitespace(trimmed.charAt(i))) {
+                throw new IllegalArgumentException(fieldName + " must be a single word");
+            }
         }
     }
 
