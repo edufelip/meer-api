@@ -87,15 +87,13 @@ public class AdminDashboardController {
         if (page < 0 || pageSize < 1 || pageSize > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
         }
-        Sort s = "oldest".equalsIgnoreCase(sort)
-                ? Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt")
-                : Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
+        Sort.Direction direction = "oldest".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort s = Sort.by(direction, "createdAt").and(Sort.by(direction, "id"));
         Pageable pageable = PageRequest.of(page, pageSize, s);
-        var pageRes = (q != null && !q.isBlank())
-                ? guideContentRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q, pageable)
-                : guideContentRepository.findAll(pageable);
-        List<GuideContentDto> items = pageRes.getContent().stream().map(Mappers::toDto).toList();
-        return new PageResponse<>(items, page, pageRes.hasNext());
+        var slice = (q != null && !q.isBlank())
+                ? guideContentRepository.searchSummaries(q, pageable)
+                : guideContentRepository.findAllSummaries(pageable);
+        return new PageResponse<>(slice.getContent(), page, slice.hasNext());
     }
 
     @GetMapping("/contents/{id}")

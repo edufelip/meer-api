@@ -25,6 +25,7 @@ public class Mappers {
                 content.getImageUrl(),
                 content.getThriftStore() != null ? content.getThriftStore().getId() : null,
                 content.getThriftStore() != null ? content.getThriftStore().getName() : null,
+                content.getThriftStore() != null ? content.getThriftStore().getCoverImageUrl() : null,
                 content.getCreatedAt()
         );
     }

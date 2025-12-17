@@ -7,5 +7,6 @@ public record GuideContentDto(
         String imageUrl,
         java.util.UUID thriftStoreId,
         String thriftStoreName,
+        String thriftStoreCoverImageUrl,
         java.time.Instant createdAt
 ) {}

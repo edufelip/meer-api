@@ -99,6 +99,7 @@ public class HomeController {
                         gc.getImageUrl(),
                         gc.getThriftStore() != null ? gc.getThriftStore().getId() : null,
                         gc.getThriftStore() != null ? gc.getThriftStore().getName() : null,
+                        gc.getThriftStore() != null ? gc.getThriftStore().getCoverImageUrl() : null,
                         gc.getCreatedAt()))
                 .toList();
 
