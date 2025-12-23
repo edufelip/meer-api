@@ -16,7 +16,7 @@ public interface ThriftStoreRepository extends JpaRepository<ThriftStore, UUID> 
     Page<ThriftStore> findByCategoryId(@Param("categoryId") String categoryId, Pageable pageable);
 
     @EntityGraph(attributePaths = "photos")
-    java.util.List<ThriftStore> findTop10ByOrderByCreatedAtDesc();
+    List<ThriftStore> findTop10ByOrderByCreatedAtDesc();
 
     /**
      * Preferred KNN using PostGIS geography (requires postgis extension).

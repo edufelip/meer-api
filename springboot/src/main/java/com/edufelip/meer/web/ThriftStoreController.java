@@ -1,6 +1,7 @@
 package com.edufelip.meer.web;
 
 import com.edufelip.meer.core.content.GuideContent;
+import com.edufelip.meer.core.store.StoreFeedback;
 import com.edufelip.meer.core.store.ThriftStore;
 import com.edufelip.meer.domain.CreateGuideContentUseCase;
 import com.edufelip.meer.domain.GetGuideContentsByThriftStoreUseCase;
@@ -15,7 +16,6 @@ import com.edufelip.meer.dto.ThriftStoreDto;
 import com.edufelip.meer.dto.PhotoUploadRequest;
 import com.edufelip.meer.dto.PhotoUploadResponse;
 import com.edufelip.meer.dto.PhotoRegisterRequest;
-import com.edufelip.meer.dto.PhotoUploadSlot;
 import com.edufelip.meer.dto.StoreRequest;
 import com.edufelip.meer.mapper.Mappers;
 import com.edufelip.meer.service.StoreFeedbackService;
@@ -117,7 +117,7 @@ public class ThriftStoreController {
         var user = currentUser(authHeader);
         var favorites = user.getFavorites();
         var pageable = PageRequest.of(page - 1, pageSize);
-        java.util.List<ThriftStore> storesPage;
+        List<ThriftStore> storesPage;
         boolean hasNext;
 
         if ("nearby".equalsIgnoreCase(type)) {
@@ -167,13 +167,13 @@ public class ThriftStoreController {
         var user = currentUser(authHeader);
         var store = getThriftStoreUseCase.execute(id);
         if (store == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found");
-        var summary = storeFeedbackService.getSummaries(java.util.List.of(store.getId())).get(store.getId());
+        var summary = storeFeedbackService.getSummaries(List.of(store.getId())).get(store.getId());
         Double rating = summary != null ? summary.rating() : null;
         Integer reviewCount = summary != null && summary.reviewCount() != null ? summary.reviewCount().intValue() : null;
         boolean isFav = user.getFavorites().stream().anyMatch(f -> f.getId().equals(store.getId()));
         Integer myRating = storeFeedbackRepository
                 .findByUserIdAndThriftStoreId(user.getId(), store.getId())
-                .map(fb -> fb.getScore())
+                .map(StoreFeedback::getScore)
                 .orElse(null);
         return Mappers.toDto(store, true, isFav, rating, reviewCount, null, myRating);
     }
@@ -270,11 +270,9 @@ public class ThriftStoreController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "duplicate position " + i.getPosition());
             }
         }
-        if (!positions.isEmpty()) {
-            int max = positions.stream().mapToInt(Integer::intValue).max().orElse(0);
-            if (max != items.size() - 1) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "positions must be contiguous starting at 0");
-            }
+        int max = positions.stream().mapToInt(Integer::intValue).max().orElse(0);
+        if (max != items.size() - 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "positions must be contiguous starting at 0");
         }
 
         var existingPhotos = store.getPhotos() == null ? new ArrayList<ThriftStorePhoto>() : new ArrayList<>(store.getPhotos());
@@ -426,8 +424,7 @@ public class ThriftStoreController {
 
         var refreshed = thriftStoreRepository.findById(id).orElseThrow();
         boolean isFav = user.getFavorites().stream().anyMatch(f -> f.getId().equals(id));
-        var dto = Mappers.toDto(refreshed, true, isFav, null, null, null);
-        return dto;
+        return Mappers.toDto(refreshed, true, isFav, null, null, null);
     }
 
     @DeleteMapping("/{id}")
@@ -453,9 +450,7 @@ public class ThriftStoreController {
         storeFeedbackRepository.deleteByThriftStoreId(id);
 
         if (store.getPhotos() != null) {
-            store.getPhotos().forEach(p -> {
-                deletePhotoAsset(p.getUrl());
-            });
+            store.getPhotos().forEach(p -> deletePhotoAsset(p.getUrl()));
         }
         thriftStoreRepository.delete(store);
         return ResponseEntity.noContent().build();
