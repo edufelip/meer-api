@@ -8,8 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,6 +72,31 @@ public class RestExceptionHandler {
         message = fieldError.getField() + " is invalid";
       }
     }
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", message));
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException ex) {
+    String headerName = ex.getHeaderName();
+    if (headerName != null && headerName.equalsIgnoreCase("Authorization")) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(Map.of("message", "Missing Authorization header"));
+    }
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(Map.of("message", "Missing required header"));
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(
+      MethodArgumentTypeMismatchException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(Map.of("message", "Invalid request parameter"));
+  }
+
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+    String message =
+        ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : "Invalid request";
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", message));
   }
 

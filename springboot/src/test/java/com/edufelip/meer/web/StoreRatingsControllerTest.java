@@ -3,6 +3,7 @@ package com.edufelip.meer.web;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.SliceImpl;
 import org.springframework.http.MediaType;
@@ -32,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(StoreRatingsController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(RestExceptionHandler.class)
 class StoreRatingsControllerTest {
 
   @Autowired private MockMvc mockMvc;
@@ -106,5 +109,111 @@ class StoreRatingsControllerTest {
         .andExpect(status().isNotFound());
 
     verifyNoInteractions(storeFeedbackRepository);
+  }
+
+  @Test
+  void listReturnsUnauthorizedWhenMissingAuthHeader() throws Exception {
+    UUID storeId = UUID.randomUUID();
+
+    mockMvc
+        .perform(get("/stores/{storeId}/ratings", storeId).contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
+
+    verifyNoInteractions(tokenProvider, authUserRepository, thriftStoreRepository);
+    verifyNoInteractions(storeFeedbackRepository);
+  }
+
+  @Test
+  void listRejectsInvalidPaginationParams() throws Exception {
+    UUID userId = UUID.randomUUID();
+    UUID storeId = UUID.randomUUID();
+
+    AuthUser user = new AuthUser();
+    user.setId(userId);
+    user.setEmail("user@example.com");
+    user.setDisplayName("User");
+    user.setPasswordHash("hash");
+
+    when(tokenProvider.parseAccessToken("token"))
+        .thenReturn(new TokenPayload(userId, "user@example.com", "User", Role.USER));
+    when(authUserRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    mockMvc
+        .perform(
+            get("/stores/{storeId}/ratings", storeId)
+                .header("Authorization", "Bearer token")
+                .param("page", "0")
+                .param("pageSize", "10")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(
+            get("/stores/{storeId}/ratings", storeId)
+                .header("Authorization", "Bearer token")
+                .param("page", "1")
+                .param("pageSize", "101")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest());
+
+    verifyNoMoreInteractions(thriftStoreRepository, storeFeedbackRepository);
+  }
+
+  @Test
+  void listReturnsEmptyPageWhenNoRatings() throws Exception {
+    UUID userId = UUID.randomUUID();
+    UUID storeId = UUID.randomUUID();
+
+    AuthUser user = new AuthUser();
+    user.setId(userId);
+    user.setEmail("user@example.com");
+    user.setDisplayName("User");
+    user.setPasswordHash("hash");
+
+    when(tokenProvider.parseAccessToken("token"))
+        .thenReturn(new TokenPayload(userId, "user@example.com", "User", Role.USER));
+    when(authUserRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(thriftStoreRepository.findById(storeId))
+        .thenReturn(Optional.of(new com.edufelip.meer.core.store.ThriftStore()));
+
+    var slice = new SliceImpl<StoreRatingDto>(List.of(), PageRequest.of(0, 10), false);
+    when(storeFeedbackRepository.findRatingsByStoreId(eq(storeId), any())).thenReturn(slice);
+
+    mockMvc
+        .perform(
+            get("/stores/{storeId}/ratings", storeId)
+                .header("Authorization", "Bearer token")
+                .param("page", "1")
+                .param("pageSize", "10")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.page").value(1))
+        .andExpect(jsonPath("$.hasNext").value(false))
+        .andExpect(jsonPath("$.items").isArray())
+        .andExpect(jsonPath("$.items").isEmpty());
+  }
+
+  @Test
+  void listReturnsBadRequestForMalformedStoreId() throws Exception {
+    UUID userId = UUID.randomUUID();
+
+    AuthUser user = new AuthUser();
+    user.setId(userId);
+    user.setEmail("user@example.com");
+    user.setDisplayName("User");
+    user.setPasswordHash("hash");
+
+    when(tokenProvider.parseAccessToken("token"))
+        .thenReturn(new TokenPayload(userId, "user@example.com", "User", Role.USER));
+    when(authUserRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    mockMvc
+        .perform(
+            get("/stores/{storeId}/ratings", "not-a-uuid")
+                .header("Authorization", "Bearer token")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isBadRequest());
+
+    verifyNoInteractions(thriftStoreRepository, storeFeedbackRepository);
   }
 }

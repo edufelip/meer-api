@@ -63,6 +63,7 @@ public class StoreFeedbackService {
     return repository.findByUserIdAndThriftStoreId(userId, storeId);
   }
 
+  @CacheEvict(cacheNames = "storeRatings", allEntries = true)
   public void delete(java.util.UUID userId, java.util.UUID storeId) {
     repository.findByUserIdAndThriftStoreId(userId, storeId).ifPresent(repository::delete);
   }
