@@ -67,7 +67,7 @@ tasks.withType<Test> {
 
 tasks.named<Test>("test") {
     useJUnitPlatform {
-        excludeTags("perf")
+        excludeTags("perf", "slow")
     }
 }
 
@@ -76,6 +76,15 @@ tasks.register<Test>("perfTest") {
     description = "Runs performance guardrail tests."
     useJUnitPlatform {
         includeTags("perf")
+    }
+    shouldRunAfter(tasks.named("test"))
+}
+
+tasks.register<Test>("slowTest") {
+    group = "verification"
+    description = "Runs slow tests (Testcontainers/Flyway/workflows)."
+    useJUnitPlatform {
+        includeTags("slow")
     }
     shouldRunAfter(tasks.named("test"))
 }
