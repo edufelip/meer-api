@@ -6,29 +6,33 @@ import com.edufelip.meer.security.token.TokenPayload;
 import com.edufelip.meer.security.token.TokenProvider;
 
 public class RefreshTokenUseCase {
-    private final TokenProvider tokenProvider;
-    private final AuthUserRepository authUserRepository;
+  private final TokenProvider tokenProvider;
+  private final AuthUserRepository authUserRepository;
 
-    public RefreshTokenUseCase(TokenProvider tokenProvider, AuthUserRepository authUserRepository) {
-        this.tokenProvider = tokenProvider;
-        this.authUserRepository = authUserRepository;
+  public RefreshTokenUseCase(TokenProvider tokenProvider, AuthUserRepository authUserRepository) {
+    this.tokenProvider = tokenProvider;
+    this.authUserRepository = authUserRepository;
+  }
+
+  public AuthResult execute(String refreshToken) {
+    if (refreshToken == null || refreshToken.isBlank()) throw new InvalidRefreshTokenException();
+    TokenPayload payload;
+    try {
+      payload = tokenProvider.parseRefreshToken(refreshToken);
+    } catch (RuntimeException ex) {
+      throw new InvalidRefreshTokenException();
     }
 
-    public AuthResult execute(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) throw new InvalidRefreshTokenException();
-        TokenPayload payload;
-        try {
-            payload = tokenProvider.parseRefreshToken(refreshToken);
-        } catch (RuntimeException ex) {
-            throw new InvalidRefreshTokenException();
-        }
+    var user =
+        authUserRepository
+            .findById(payload.getUserId())
+            .orElseThrow(InvalidRefreshTokenException::new);
 
-        var user = authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidRefreshTokenException::new);
+    String access = tokenProvider.generateAccessToken(user);
+    String refresh = tokenProvider.generateRefreshToken(user);
 
-        String access = tokenProvider.generateAccessToken(user);
-        String refresh = tokenProvider.generateRefreshToken(user);
-
-        AuthenticatedUser authUser = new AuthenticatedUser(user.getId(), user.getDisplayName(), user.getEmail(), user.getRole());
-        return new AuthResult(access, refresh, authUser);
-    }
+    AuthenticatedUser authUser =
+        new AuthenticatedUser(user.getId(), user.getDisplayName(), user.getEmail(), user.getRole());
+    return new AuthResult(access, refresh, authUser);
+  }
 }

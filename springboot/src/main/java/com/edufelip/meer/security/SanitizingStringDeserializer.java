@@ -8,27 +8,27 @@ import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.deser.std.StdScalarDeserializer;
 
 /**
- * Global string sanitizer used on request bodies to strip HTML/JS payloads,
- * trim whitespace, and enforce a maximum length to mitigate XSS/DoS vectors.
+ * Global string sanitizer used on request bodies to strip HTML/JS payloads, trim whitespace, and
+ * enforce a maximum length to mitigate XSS/DoS vectors.
  */
 public class SanitizingStringDeserializer extends StdScalarDeserializer<String> {
 
-    private final int maxLength;
+  private final int maxLength;
 
-    public SanitizingStringDeserializer(int maxLength) {
-        super(String.class);
-        this.maxLength = maxLength;
+  public SanitizingStringDeserializer(int maxLength) {
+    super(String.class);
+    this.maxLength = maxLength;
+  }
+
+  @Override
+  public String deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
+    String value = p.getValueAsString();
+    if (value == null) return null;
+
+    String cleaned = Jsoup.clean(value, Safelist.none()).trim();
+    if (cleaned.length() > maxLength) {
+      cleaned = cleaned.substring(0, maxLength);
     }
-
-    @Override
-    public String deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
-        String value = p.getValueAsString();
-        if (value == null) return null;
-
-        String cleaned = Jsoup.clean(value, Safelist.none()).trim();
-        if (cleaned.length() > maxLength) {
-            cleaned = cleaned.substring(0, maxLength);
-        }
-        return cleaned;
-    }
+    return cleaned;
+  }
 }

@@ -9,11 +9,8 @@ import org.springframework.context.annotation.Profile;
 @Profile({"local-db", "local", "default"})
 public class OpenApiConfig {
 
-    @Bean
-    public GroupedOpenApi apiDocs() {
-        return GroupedOpenApi.builder()
-                .group("meer")
-                .pathsToMatch("/**")
-                .build();
-    }
+  @Bean
+  public GroupedOpenApi apiDocs() {
+    return GroupedOpenApi.builder().group("meer").pathsToMatch("/**").build();
+  }
 }

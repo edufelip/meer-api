@@ -6,21 +6,24 @@ import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import org.springframework.cache.annotation.CacheEvict;
 
 public class CreateGuideContentUseCase {
-    private final GuideContentRepository guideContentRepository;
-    private final ThriftStoreRepository thriftStoreRepository;
+  private final GuideContentRepository guideContentRepository;
+  private final ThriftStoreRepository thriftStoreRepository;
 
-    public CreateGuideContentUseCase(GuideContentRepository guideContentRepository, ThriftStoreRepository thriftStoreRepository) {
-        this.guideContentRepository = guideContentRepository;
-        this.thriftStoreRepository = thriftStoreRepository;
-    }
+  public CreateGuideContentUseCase(
+      GuideContentRepository guideContentRepository, ThriftStoreRepository thriftStoreRepository) {
+    this.guideContentRepository = guideContentRepository;
+    this.thriftStoreRepository = thriftStoreRepository;
+  }
 
-    @CacheEvict(cacheNames = "guideTop10", allEntries = true)
-    public GuideContent execute(GuideContent guideContent) {
-        if (guideContent.getThriftStore() != null && guideContent.getThriftStore().getId() != null) {
-            var thrift = thriftStoreRepository.findById(guideContent.getThriftStore().getId())
-                    .orElseThrow(() -> new RuntimeException("Thrift store not found"));
-            guideContent.setThriftStore(thrift);
-        }
-        return guideContentRepository.save(guideContent);
+  @CacheEvict(cacheNames = "guideTop10", allEntries = true)
+  public GuideContent execute(GuideContent guideContent) {
+    if (guideContent.getThriftStore() != null && guideContent.getThriftStore().getId() != null) {
+      var thrift =
+          thriftStoreRepository
+              .findById(guideContent.getThriftStore().getId())
+              .orElseThrow(() -> new RuntimeException("Thrift store not found"));
+      guideContent.setThriftStore(thrift);
     }
+    return guideContentRepository.save(guideContent);
+  }
 }

@@ -6,6 +6,7 @@ import com.edufelip.meer.dto.CategoryDto;
 import com.edufelip.meer.dto.CategoryStoreItemDto;
 import com.edufelip.meer.dto.PageResponse;
 import com.edufelip.meer.mapper.Mappers;
+import java.util.List;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -16,45 +17,46 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/categories")
 public class CategoryController {
 
-    private final CategoryRepository categoryRepository;
-    private final ThriftStoreRepository thriftStoreRepository;
+  private final CategoryRepository categoryRepository;
+  private final ThriftStoreRepository thriftStoreRepository;
 
-    public CategoryController(CategoryRepository categoryRepository, ThriftStoreRepository thriftStoreRepository) {
-        this.categoryRepository = categoryRepository;
-        this.thriftStoreRepository = thriftStoreRepository;
+  public CategoryController(
+      CategoryRepository categoryRepository, ThriftStoreRepository thriftStoreRepository) {
+    this.categoryRepository = categoryRepository;
+    this.thriftStoreRepository = thriftStoreRepository;
+  }
+
+  @GetMapping
+  @Cacheable("categoriesAll")
+  public List<CategoryDto> getAll() {
+    return categoryRepository.findAll().stream().map(Mappers::toDto).toList();
+  }
+
+  @GetMapping("/{categoryId}/stores")
+  public PageResponse<CategoryStoreItemDto> getStoresByCategory(
+      @PathVariable String categoryId,
+      @RequestParam(name = "page", defaultValue = "1") int page,
+      @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
+    if (page < 1 || pageSize < 1 || pageSize > 100) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
     }
 
-    @GetMapping
-    @Cacheable("categoriesAll")
-    public List<CategoryDto> getAll() {
-        return categoryRepository.findAll().stream().map(Mappers::toDto).toList();
+    if (categoryRepository.findById(categoryId).isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
     }
 
-    @GetMapping("/{categoryId}/stores")
-    public PageResponse<CategoryStoreItemDto> getStoresByCategory(
-            @PathVariable String categoryId,
-            @RequestParam(name = "page", defaultValue = "1") int page,
-            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize
-    ) {
-        if (page < 1 || pageSize < 1 || pageSize > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
-        }
+    var pageable = PageRequest.of(page - 1, pageSize);
+    var result = thriftStoreRepository.findByCategoryId(categoryId, pageable);
 
-        if (categoryRepository.findById(categoryId).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
-        }
-
-        var pageable = PageRequest.of(page - 1, pageSize);
-        var result = thriftStoreRepository.findByCategoryId(categoryId, pageable);
-
-        var items = result.getContent().stream()
-                .map(store -> new CategoryStoreItemDto(
+    var items =
+        result.getContent().stream()
+            .map(
+                store ->
+                    new CategoryStoreItemDto(
                         store.getId(),
                         store.getName(),
                         store.getCoverImageUrl(),
@@ -62,10 +64,9 @@ public class CategoryController {
                         null,
                         null,
                         store.getCategories(),
-                        null
-                ))
-                .toList();
+                        null))
+            .toList();
 
-        return new PageResponse<>(items, page, result.hasNext());
-    }
+    return new PageResponse<>(items, page, result.hasNext());
+  }
 }

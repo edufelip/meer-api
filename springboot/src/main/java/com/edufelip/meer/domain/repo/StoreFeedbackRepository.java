@@ -2,32 +2,36 @@ package com.edufelip.meer.domain.repo;
 
 import com.edufelip.meer.core.store.StoreFeedback;
 import com.edufelip.meer.dto.StoreRatingDto;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface StoreFeedbackRepository extends JpaRepository<StoreFeedback, Integer> {
-    Optional<StoreFeedback> findByUserIdAndThriftStoreId(UUID userId, UUID storeId);
-    void deleteByUserId(UUID userId);
+  Optional<StoreFeedback> findByUserIdAndThriftStoreId(UUID userId, UUID storeId);
 
-    interface AggregateView {
-        java.util.UUID getStoreId();
-        Double getAvgScore();
-        Long getCnt();
-    }
+  void deleteByUserId(UUID userId);
 
-    void deleteByThriftStoreId(UUID storeId);
+  interface AggregateView {
+    java.util.UUID getStoreId();
 
-    @Query("select f.thriftStore.id as storeId, avg(f.score) as avgScore, count(f) as cnt from StoreFeedback f where f.thriftStore.id in :storeIds and f.score is not null group by f.thriftStore.id")
-    List<AggregateView> aggregateByStoreIds(@Param("storeIds") List<UUID> storeIds);
+    Double getAvgScore();
 
-    @Query("""
+    Long getCnt();
+  }
+
+  void deleteByThriftStoreId(UUID storeId);
+
+  @Query(
+      "select f.thriftStore.id as storeId, avg(f.score) as avgScore, count(f) as cnt from StoreFeedback f where f.thriftStore.id in :storeIds and f.score is not null group by f.thriftStore.id")
+  List<AggregateView> aggregateByStoreIds(@Param("storeIds") List<UUID> storeIds);
+
+  @Query(
+      """
             select new com.edufelip.meer.dto.StoreRatingDto(
                 f.id,
                 s.id,
@@ -44,5 +48,5 @@ public interface StoreFeedbackRepository extends JpaRepository<StoreFeedback, In
               and f.score is not null
             order by f.createdAt desc
             """)
-    Slice<StoreRatingDto> findRatingsByStoreId(@Param("storeId") UUID storeId, Pageable pageable);
+  Slice<StoreRatingDto> findRatingsByStoreId(@Param("storeId") UUID storeId, Pageable pageable);
 }

@@ -23,47 +23,50 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/stores/{storeId}/ratings")
 public class StoreRatingsController {
 
-    private final TokenProvider tokenProvider;
-    private final AuthUserRepository authUserRepository;
-    private final ThriftStoreRepository thriftStoreRepository;
-    private final StoreFeedbackRepository storeFeedbackRepository;
+  private final TokenProvider tokenProvider;
+  private final AuthUserRepository authUserRepository;
+  private final ThriftStoreRepository thriftStoreRepository;
+  private final StoreFeedbackRepository storeFeedbackRepository;
 
-    public StoreRatingsController(TokenProvider tokenProvider,
-                                  AuthUserRepository authUserRepository,
-                                  ThriftStoreRepository thriftStoreRepository,
-                                  StoreFeedbackRepository storeFeedbackRepository) {
-        this.tokenProvider = tokenProvider;
-        this.authUserRepository = authUserRepository;
-        this.thriftStoreRepository = thriftStoreRepository;
-        this.storeFeedbackRepository = storeFeedbackRepository;
+  public StoreRatingsController(
+      TokenProvider tokenProvider,
+      AuthUserRepository authUserRepository,
+      ThriftStoreRepository thriftStoreRepository,
+      StoreFeedbackRepository storeFeedbackRepository) {
+    this.tokenProvider = tokenProvider;
+    this.authUserRepository = authUserRepository;
+    this.thriftStoreRepository = thriftStoreRepository;
+    this.storeFeedbackRepository = storeFeedbackRepository;
+  }
+
+  @GetMapping
+  public PageResponse<StoreRatingDto> list(
+      @PathVariable java.util.UUID storeId,
+      @RequestHeader("Authorization") String authHeader,
+      @RequestParam(name = "page", defaultValue = "1") int page,
+      @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
+    if (page < 1 || pageSize < 1 || pageSize > 100) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
     }
+    currentUser(authHeader);
+    thriftStoreRepository
+        .findById(storeId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
 
-    @GetMapping
-    public PageResponse<StoreRatingDto> list(@PathVariable java.util.UUID storeId,
-                                             @RequestHeader("Authorization") String authHeader,
-                                             @RequestParam(name = "page", defaultValue = "1") int page,
-                                             @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
-        if (page < 1 || pageSize < 1 || pageSize > 100) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid pagination params");
-        }
-        currentUser(authHeader);
-        thriftStoreRepository.findById(storeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found"));
+    var pageable = PageRequest.of(page - 1, pageSize);
+    var slice = storeFeedbackRepository.findRatingsByStoreId(storeId, pageable);
+    return new PageResponse<>(slice.getContent(), page, slice.hasNext());
+  }
 
-        var pageable = PageRequest.of(page - 1, pageSize);
-        var slice = storeFeedbackRepository.findRatingsByStoreId(storeId, pageable);
-        return new PageResponse<>(slice.getContent(), page, slice.hasNext());
+  private AuthUser currentUser(String authHeader) {
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) throw new InvalidTokenException();
+    String token = authHeader.substring("Bearer ".length()).trim();
+    TokenPayload payload;
+    try {
+      payload = tokenProvider.parseAccessToken(token);
+    } catch (RuntimeException ex) {
+      throw new InvalidTokenException();
     }
-
-    private AuthUser currentUser(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) throw new InvalidTokenException();
-        String token = authHeader.substring("Bearer ".length()).trim();
-        TokenPayload payload;
-        try {
-            payload = tokenProvider.parseAccessToken(token);
-        } catch (RuntimeException ex) {
-            throw new InvalidTokenException();
-        }
-        return authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidTokenException::new);
-    }
+    return authUserRepository.findById(payload.getUserId()).orElseThrow(InvalidTokenException::new);
+  }
 }
