@@ -20,6 +20,7 @@ import com.edufelip.meer.domain.auth.DashboardLoginUseCase;
 import com.edufelip.meer.domain.auth.ForgotPasswordUseCase;
 import com.edufelip.meer.domain.auth.GoogleLoginUseCase;
 import com.edufelip.meer.domain.auth.LoginUseCase;
+import com.edufelip.meer.domain.auth.ResetPasswordUseCase;
 import com.edufelip.meer.domain.auth.RefreshTokenUseCase;
 import com.edufelip.meer.domain.auth.SignupUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
@@ -68,6 +69,7 @@ class PublicApiSnapshotTest {
   @MockitoBean private AppleLoginUseCase appleLoginUseCase;
   @MockitoBean private RefreshTokenUseCase refreshTokenUseCase;
   @MockitoBean private ForgotPasswordUseCase forgotPasswordUseCase;
+  @MockitoBean private ResetPasswordUseCase resetPasswordUseCase;
   @MockitoBean private AuthUserRepository authUserRepository;
   @MockitoBean private TokenProvider tokenProvider;
 
@@ -152,6 +154,21 @@ class PublicApiSnapshotTest {
             .getContentAsString();
 
     SnapshotAssertions.assertJsonSnapshot("snapshots/auth/forgot-password.json", body);
+  }
+
+  @Test
+  void authResetPassword() throws Exception {
+    doNothing()
+        .when(resetPasswordUseCase)
+        .execute(eq("b9c7718b-7f30-4e8f-ae2f-053a221e0f2d"), eq("Password1!"));
+
+    mockMvc
+        .perform(
+            post("/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"token\":\"b9c7718b-7f30-4e8f-ae2f-053a221e0f2d\",\"password\":\"Password1!\"}"))
+        .andExpect(status().isNoContent());
   }
 
   @Test
