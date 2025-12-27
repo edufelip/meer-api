@@ -14,6 +14,8 @@ public class AuthDtos {
 
   public record ForgotPasswordRequest(String email) {}
 
+  public record ResetPasswordRequest(String token, String password) {}
+
   public record UserDto(String id, String name, String email, String role) {}
 
   public record AuthResponse(String token, String refreshToken, UserDto user) {}

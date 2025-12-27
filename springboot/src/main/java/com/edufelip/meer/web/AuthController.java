@@ -23,6 +23,7 @@ public class AuthController {
   private final AppleLoginUseCase appleLoginUseCase;
   private final RefreshTokenUseCase refreshTokenUseCase;
   private final ForgotPasswordUseCase forgotPasswordUseCase;
+  private final ResetPasswordUseCase resetPasswordUseCase;
   private final AuthUserRepository authUserRepository;
   private final com.edufelip.meer.security.token.TokenProvider tokenProvider;
 
@@ -33,6 +34,7 @@ public class AuthController {
       AppleLoginUseCase appleLoginUseCase,
       RefreshTokenUseCase refreshTokenUseCase,
       ForgotPasswordUseCase forgotPasswordUseCase,
+      ResetPasswordUseCase resetPasswordUseCase,
       AuthUserRepository authUserRepository,
       com.edufelip.meer.security.token.TokenProvider tokenProvider) {
     this.loginUseCase = loginUseCase;
@@ -41,6 +43,7 @@ public class AuthController {
     this.appleLoginUseCase = appleLoginUseCase;
     this.refreshTokenUseCase = refreshTokenUseCase;
     this.forgotPasswordUseCase = forgotPasswordUseCase;
+    this.resetPasswordUseCase = resetPasswordUseCase;
     this.authUserRepository = authUserRepository;
     this.tokenProvider = tokenProvider;
   }
@@ -66,6 +69,12 @@ public class AuthController {
       @RequestBody AuthDtos.ForgotPasswordRequest body) {
     forgotPasswordUseCase.execute(body.email());
     return ResponseEntity.ok(Map.of("message", "Reset email sent"));
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<Void> resetPassword(@RequestBody AuthDtos.ResetPasswordRequest body) {
+    resetPasswordUseCase.execute(body.token(), body.password());
+    return ResponseEntity.noContent().build();
   }
 
   @PostMapping("/google")
@@ -123,6 +132,11 @@ public class AuthController {
   @ExceptionHandler(EmailAlreadyRegisteredException.class)
   public ResponseEntity<Map<String, String>> handleEmailTaken(EmailAlreadyRegisteredException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
+  }
+
+  @ExceptionHandler(ResetPasswordException.class)
+  public ResponseEntity<Map<String, String>> handleResetPassword(ResetPasswordException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
   }
 
   @ExceptionHandler({

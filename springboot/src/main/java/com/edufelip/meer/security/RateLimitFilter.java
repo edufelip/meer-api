@@ -25,6 +25,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
           "/auth/login",
           "/auth/signup",
           "/auth/forgot-password",
+          "/auth/reset-password",
           "/auth/refresh",
           "/auth/google",
           "/auth/apple",

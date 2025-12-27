@@ -70,6 +70,7 @@ public class RequestGuardsFilter extends OncePerRequestFilter {
               "/auth/apple",
               "/auth/refresh",
               "/auth/forgot-password",
+              "/auth/reset-password",
               "/dashboard/login" ->
           true;
       case "/support/contact" -> true;
