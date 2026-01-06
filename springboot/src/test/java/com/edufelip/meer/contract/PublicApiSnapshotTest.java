@@ -12,7 +12,9 @@ import com.edufelip.meer.config.TestClockConfig;
 import com.edufelip.meer.core.auth.Role;
 import com.edufelip.meer.core.content.GuideContent;
 import com.edufelip.meer.core.store.ThriftStore;
+import com.edufelip.meer.domain.CreateGuideContentCommentUseCase;
 import com.edufelip.meer.domain.GetGuideContentUseCase;
+import com.edufelip.meer.domain.UpdateGuideContentCommentUseCase;
 import com.edufelip.meer.domain.auth.AppleLoginUseCase;
 import com.edufelip.meer.domain.auth.AuthResult;
 import com.edufelip.meer.domain.auth.AuthenticatedUser;
@@ -20,17 +22,22 @@ import com.edufelip.meer.domain.auth.DashboardLoginUseCase;
 import com.edufelip.meer.domain.auth.ForgotPasswordUseCase;
 import com.edufelip.meer.domain.auth.GoogleLoginUseCase;
 import com.edufelip.meer.domain.auth.LoginUseCase;
-import com.edufelip.meer.domain.auth.ResetPasswordUseCase;
 import com.edufelip.meer.domain.auth.RefreshTokenUseCase;
+import com.edufelip.meer.domain.auth.ResetPasswordUseCase;
 import com.edufelip.meer.domain.auth.SignupUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
+import com.edufelip.meer.domain.repo.GuideContentCommentRepository;
+import com.edufelip.meer.domain.repo.GuideContentLikeRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.SupportContactRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.dto.GuideContentDto;
+import com.edufelip.meer.security.RateLimitService;
 import com.edufelip.meer.security.SanitizingJacksonModuleConfig;
 import com.edufelip.meer.security.token.TokenProvider;
 import com.edufelip.meer.service.GcsStorageService;
+import com.edufelip.meer.service.GuideContentEngagementService;
+import com.edufelip.meer.service.GuideContentModerationService;
 import com.edufelip.meer.support.SnapshotAssertions;
 import com.edufelip.meer.web.AuthController;
 import com.edufelip.meer.web.DashboardAuthController;
@@ -76,9 +83,16 @@ class PublicApiSnapshotTest {
   @MockitoBean private DashboardLoginUseCase dashboardLoginUseCase;
 
   @MockitoBean private SupportContactRepository supportContactRepository;
+  @MockitoBean private RateLimitService rateLimitService;
 
   @MockitoBean private GetGuideContentUseCase getGuideContentUseCase;
   @MockitoBean private GuideContentRepository guideContentRepository;
+  @MockitoBean private GuideContentCommentRepository guideContentCommentRepository;
+  @MockitoBean private GuideContentLikeRepository guideContentLikeRepository;
+  @MockitoBean private CreateGuideContentCommentUseCase createGuideContentCommentUseCase;
+  @MockitoBean private UpdateGuideContentCommentUseCase updateGuideContentCommentUseCase;
+  @MockitoBean private GuideContentEngagementService guideContentEngagementService;
+  @MockitoBean private GuideContentModerationService guideContentModerationService;
   @MockitoBean private GcsStorageService gcsStorageService;
   @MockitoBean private ThriftStoreRepository thriftStoreRepository;
 
@@ -232,6 +246,7 @@ class PublicApiSnapshotTest {
   @Test
   void supportContactSnapshot() throws Exception {
     when(supportContactRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(rateLimitService.allowSupportContact(any())).thenReturn(true);
 
     String body =
         mockMvc
@@ -261,9 +276,13 @@ class PublicApiSnapshotTest {
             storeId,
             "Store",
             "https://cover",
-            createdAt);
+            createdAt,
+            0L,
+            0L,
+            false);
     var slice = new SliceImpl<>(List.of(dto), PageRequest.of(0, 20), false);
-    when(guideContentRepository.findAllSummaries(any())).thenReturn(slice);
+    when(guideContentRepository.findAllSummariesActive(any())).thenReturn(slice);
+    when(guideContentEngagementService.getEngagement(any(), any())).thenReturn(java.util.Map.of());
 
     String body =
         mockMvc
@@ -293,6 +312,7 @@ class PublicApiSnapshotTest {
     content.setCreatedAt(Instant.parse("2024-01-01T00:00:00Z"));
 
     when(getGuideContentUseCase.execute(eq(1))).thenReturn(content);
+    when(guideContentEngagementService.getEngagement(any(), any())).thenReturn(java.util.Map.of());
 
     String body =
         mockMvc

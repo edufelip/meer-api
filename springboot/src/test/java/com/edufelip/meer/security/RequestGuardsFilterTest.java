@@ -1,12 +1,21 @@
 package com.edufelip.meer.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.edufelip.meer.core.auth.AuthUser;
+import com.edufelip.meer.core.auth.Role;
+import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.security.guards.AppHeaderGuard;
 import com.edufelip.meer.security.guards.FirebaseAuthGuard;
+import com.edufelip.meer.security.token.TokenPayload;
+import com.edufelip.meer.security.token.TokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -15,13 +24,13 @@ import org.springframework.mock.web.MockHttpServletResponse;
 class RequestGuardsFilterTest {
 
   @Test
-  void publicPathsBypassGuards() throws ServletException, IOException {
+  void publicPathsBypassAuthButRequireAppHeader() throws ServletException, IOException {
     SecurityProperties props = new SecurityProperties();
     props.setRequireAppHeader(true);
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -39,7 +48,42 @@ class RequestGuardsFilterTest {
     contentsRequest.setServletPath("/contents");
     MockHttpServletResponse contentsResponse = new MockHttpServletResponse();
     filter.doFilter(contentsRequest, contentsResponse, chain);
+    assertThat(chainCalled.get()).isFalse();
+    assertThat(contentsResponse.getStatus()).isEqualTo(401);
+
+    chainCalled.set(false);
+    contentsRequest = new MockHttpServletRequest("GET", "/contents");
+    contentsRequest.setServletPath("/contents");
+    contentsRequest.addHeader(AppHeaderGuard.APP_HEADER, "com.edufelip.meer");
+    contentsResponse = new MockHttpServletResponse();
+    filter.doFilter(contentsRequest, contentsResponse, chain);
     assertThat(chainCalled.get()).isTrue();
+  }
+
+  @Test
+  void publicPathWithInvalidTokenIsRejected() throws Exception {
+    SecurityProperties props = new SecurityProperties();
+    props.setRequireAppHeader(true);
+    props.setDisableAuth(false);
+    props.setAppPackage("com.edufelip.meer");
+
+    RequestGuardsFilter filter = buildFilter(props);
+    AtomicBoolean chainCalled = new AtomicBoolean(false);
+    FilterChain chain =
+        (request, response) -> {
+          chainCalled.set(true);
+        };
+
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/contents");
+    request.setServletPath("/contents");
+    request.addHeader(AppHeaderGuard.APP_HEADER, "com.edufelip.meer");
+    request.addHeader(FirebaseAuthGuard.AUTH_HEADER, "Bearer bad");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+
+    filter.doFilter(request, response, chain);
+
+    assertThat(chainCalled.get()).isFalse();
+    assertThat(response.getStatus()).isEqualTo(401);
   }
 
   @Test
@@ -49,7 +93,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -73,7 +117,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -99,7 +143,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -124,7 +168,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -150,7 +194,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(false);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -176,7 +220,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(true);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -201,7 +245,7 @@ class RequestGuardsFilterTest {
     props.setDisableAuth(true);
     props.setAppPackage("com.edufelip.meer");
 
-    RequestGuardsFilter filter = new RequestGuardsFilter(props);
+    RequestGuardsFilter filter = buildFilter(props);
     AtomicBoolean chainCalled = new AtomicBoolean(false);
     FilterChain chain =
         (request, response) -> {
@@ -216,5 +260,19 @@ class RequestGuardsFilterTest {
 
     assertThat(chainCalled.get()).isTrue();
     assertThat(response.getStatus()).isEqualTo(200);
+  }
+
+  private RequestGuardsFilter buildFilter(SecurityProperties props) {
+    TokenProvider tokenProvider = mock(TokenProvider.class);
+    AuthUserRepository authUserRepository = mock(AuthUserRepository.class);
+    UUID userId = UUID.randomUUID();
+    when(tokenProvider.parseAccessToken("token"))
+        .thenReturn(new TokenPayload(userId, "user@example.com", "User", Role.USER));
+    when(tokenProvider.parseAccessToken("bad")).thenThrow(new RuntimeException("bad"));
+    AuthUser user = new AuthUser();
+    user.setId(userId);
+    user.setRole(Role.USER);
+    when(authUserRepository.findById(userId)).thenReturn(Optional.of(user));
+    return new RequestGuardsFilter(props, tokenProvider, authUserRepository);
   }
 }

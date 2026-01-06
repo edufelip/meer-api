@@ -11,6 +11,7 @@ import com.edufelip.meer.config.TestClockConfig;
 import com.edufelip.meer.core.support.SupportContact;
 import com.edufelip.meer.domain.repo.SupportContactRepository;
 import com.edufelip.meer.dto.SupportContactRequest;
+import com.edufelip.meer.security.RateLimitService;
 import com.edufelip.meer.security.SanitizingJacksonModuleConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -31,10 +32,15 @@ class SupportControllerTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @MockitoBean private SupportContactRepository repository;
+  @MockitoBean private RateLimitService rateLimitService;
 
   @Test
   void contactReturnsNoContent() throws Exception {
     var request = new SupportContactRequest("Jane Doe", "jane@example.com", "Hello there");
+
+    org.mockito.Mockito.when(
+            rateLimitService.allowSupportContact(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(true);
 
     mockMvc
         .perform(
@@ -49,6 +55,10 @@ class SupportControllerTest {
   @Test
   void contactMissingFieldsReturnsBadRequestWithMessage() throws Exception {
     var request = new SupportContactRequest("", "jane@example.com", "");
+
+    org.mockito.Mockito.when(
+            rateLimitService.allowSupportContact(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(true);
 
     mockMvc
         .perform(
@@ -67,6 +77,10 @@ class SupportControllerTest {
         new SupportContactRequest(
             "<b>Jane Doe</b>", "bad@example.com", "<b>Hello</b> <img src=x onerror=1>");
 
+    org.mockito.Mockito.when(
+            rateLimitService.allowSupportContact(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(true);
+
     mockMvc
         .perform(
             post("/support/contact")
@@ -80,5 +94,20 @@ class SupportControllerTest {
     org.junit.jupiter.api.Assertions.assertEquals("Jane Doe", saved.getName());
     org.junit.jupiter.api.Assertions.assertEquals("bad@example.com", saved.getEmail());
     org.junit.jupiter.api.Assertions.assertEquals("Hello", saved.getMessage());
+  }
+
+  @Test
+  void contactRateLimitedReturnsTooManyRequests() throws Exception {
+    var request = new SupportContactRequest("Jane Doe", "jane@example.com", "Help");
+    org.mockito.Mockito.when(rateLimitService.allowSupportContact(any())).thenReturn(false);
+
+    mockMvc
+        .perform(
+            post("/support/contact")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(request)))
+        .andExpect(status().isTooManyRequests());
+
+    verify(repository, never()).save(any());
   }
 }

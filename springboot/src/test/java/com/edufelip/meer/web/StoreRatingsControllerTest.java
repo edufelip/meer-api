@@ -114,15 +114,19 @@ class StoreRatingsControllerTest {
   }
 
   @Test
-  void listReturnsUnauthorizedWhenMissingAuthHeader() throws Exception {
+  void listAllowsMissingAuthHeader() throws Exception {
     UUID storeId = UUID.randomUUID();
+
+    when(thriftStoreRepository.findById(storeId))
+        .thenReturn(Optional.of(new com.edufelip.meer.core.store.ThriftStore()));
+    var slice = new SliceImpl<StoreRatingDto>(List.of(), PageRequest.of(0, 10), false);
+    when(storeFeedbackRepository.findRatingsByStoreId(eq(storeId), any())).thenReturn(slice);
 
     mockMvc
         .perform(get("/stores/{storeId}/ratings", storeId).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isOk());
 
-    verifyNoInteractions(tokenProvider, authUserRepository, thriftStoreRepository);
-    verifyNoInteractions(storeFeedbackRepository);
+    verifyNoInteractions(tokenProvider, authUserRepository);
   }
 
   @Test

@@ -8,7 +8,10 @@
       "thriftStoreId": "22222222-2222-2222-2222-222222222222",
       "thriftStoreName": "Store",
       "thriftStoreCoverImageUrl": "https://cover",
-      "createdAt": "2024-01-01T00:00:00Z"
+      "createdAt": "2024-01-01T00:00:00Z",
+      "likeCount": 0,
+      "commentCount": 0,
+      "likedByMe": false
     }
   ],
   "page": 0,

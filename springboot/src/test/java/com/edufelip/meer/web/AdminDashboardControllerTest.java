@@ -13,11 +13,14 @@ import com.edufelip.meer.core.auth.Role;
 import com.edufelip.meer.core.store.ThriftStore;
 import com.edufelip.meer.core.store.ThriftStorePhoto;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
+import com.edufelip.meer.domain.repo.GuideContentCommentRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.StoreFeedbackRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.security.token.TokenProvider;
 import com.edufelip.meer.service.GcsStorageService;
+import com.edufelip.meer.service.GuideContentEngagementService;
+import com.edufelip.meer.service.GuideContentModerationService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -43,8 +46,11 @@ class AdminDashboardControllerTest {
   @MockitoBean private AuthUserRepository authUserRepository;
   @MockitoBean private ThriftStoreRepository thriftStoreRepository;
   @MockitoBean private GuideContentRepository guideContentRepository;
+  @MockitoBean private GuideContentCommentRepository guideContentCommentRepository;
   @MockitoBean private StoreFeedbackRepository storeFeedbackRepository;
   @MockitoBean private GcsStorageService gcsStorageService;
+  @MockitoBean private GuideContentEngagementService guideContentEngagementService;
+  @MockitoBean private GuideContentModerationService guideContentModerationService;
 
   @Test
   void deleteUserRemovesStoresAssetsFavoritesAndFeedback() throws Exception {
