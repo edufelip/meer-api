@@ -114,11 +114,18 @@ graph TD
 
 | Method | Path | Description |
 | :--- | :--- | :--- |
+| `GET` | `/contents` | List content (supports `q`, `sort`, `storeId`; includes `likeCount`, `commentCount`, `likedByMe`). |
+| `GET` | `/contents/{id}` | Content detail (includes `likeCount`, `commentCount`, `likedByMe`). |
 | `POST` | `/contents` | Create content (title, description, storeId). |
 | `POST` | `/contents/{id}/image/upload` | Get a single presigned slot for the cover image. |
 | `PUT` | `/contents/{id}` | Update description/title/imageUrl. |
-| `GET` | `/contents/top` | Paged, store-scoped list; items include `thriftStoreId`, `thriftStoreName`, `createdAt`. |
 | `DELETE` | `/contents/{id}` | Delete content. |
+| `POST` | `/contents/{id}/likes` | Like content. |
+| `DELETE` | `/contents/{id}/likes` | Unlike content. |
+| `GET` | `/contents/{id}/comments` | List comments (paged). |
+| `POST` | `/contents/{id}/comments` | Create comment (120 char max, sanitized). |
+| `PATCH` | `/contents/{id}/comments/{commentId}` | Edit comment (author/admin only; response includes `edited` flag). |
+| `DELETE` | `/contents/{id}/comments/{commentId}` | Delete comment (author/store owner/admin). |
 
 </details>
 
@@ -162,8 +169,9 @@ Pagination in admin APIs is 0-based: send `page=0` for the first page; responses
 
 ## 🛡 Security Model
 
-- **Public Routes:** Auth endpoints (`/auth/*`).
-- **Protected Routes:** All others pass through `RequestGuardsFilter`.
+- **Public Routes:** Auth endpoints (`/auth/*`) + read-only GET endpoints (home/featured/nearby/contents/categories/stores, etc.).
+- **Anonymous Mode:** Public GETs still require `X-App-Package`; auth is optional but invalid tokens return 401.
+- **Protected Routes:** All POST/PATCH/PUT/DELETE require auth and pass through `RequestGuardsFilter`.
 
 ## ⚡ Performance & Data
 
@@ -181,7 +189,7 @@ Pagination in admin APIs is 0-based: send `page=0` for the first page; responses
 - **Fix:** Install PostGIS packages, run `CREATE EXTENSION IF NOT EXISTS postgis;` and optionally `CREATE INDEX thrift_store_geog_idx ON thrift_store USING GIST (geography(ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)));` then start the app.
 
 **Issue: 403 Forbidden on Localhost**
-- **Cause:** Missing Auth token or App Headers.
+- **Cause:** Missing Auth token for write routes or missing `X-App-Package` for public GETs.
 
 ## 🤝 Contributing
 

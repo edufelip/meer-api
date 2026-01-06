@@ -224,6 +224,54 @@ paths:
           description: Not found
 
   /stores/{id}:
+    get:
+      summary: Get store detail
+      description: Public endpoint; provide Authorization for personalized fields, invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Store detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThriftStore'
+        '404':
+          description: Not found
+    put:
+      summary: Update store (owner or admin)
+      description: Social fields accept explicit nulls to clear existing values.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreUpdateRequest'
+      responses:
+        '200':
+          description: Updated store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThriftStore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
     delete:
       summary: Delete store (owner or admin)
       security:
@@ -242,12 +290,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           description: Not found
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: User not found
   /auth/signup:
     post:
       summary: Sign up with email/password
@@ -343,12 +385,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Profile'
+  /stores:
+    get:
+      summary: List stores (paged)
+      description: Public endpoint; provide Authorization for personalized fields, invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
+        - in: query
+          name: type
+          schema: { type: string, enum: [nearby] }
+        - in: query
+          name: categoryId
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: lat
+          schema: { type: number, format: double }
+        - in: query
+          name: lng
+          schema: { type: number, format: double }
+      responses:
+        '200':
+          description: Paged stores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseStoreCard'
+    post:
+      summary: Create store
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreCreateRequest'
+      responses:
+        '201':
+          description: Created store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThriftStore'
+        '400':
+          description: Validation error
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /home:
     get:
       summary: Home payload (featured + nearby + guide content)
-      security:
-        - bearerAuth: []
+      description: Public endpoint; provide Authorization for likedByMe, invalid tokens return 401.
+      security: []
       parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
         - in: query
           name: lat
           schema: { type: number, format: double }
@@ -367,8 +466,10 @@ paths:
   /featured:
     get:
       summary: Top featured stores (lightweight)
-      security:
-        - bearerAuth: []
+      description: Public endpoint; provide Authorization for personalized fields, invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
       responses:
         '200':
           description: Featured stores
@@ -381,9 +482,10 @@ paths:
   /nearby:
     get:
       summary: Nearby stores (paginated, light fields)
-      security:
-        - bearerAuth: []
+      description: Public endpoint; provide Authorization for personalized fields, invalid tokens return 401.
+      security: []
       parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
         - in: query
           name: lat
           required: true
@@ -405,29 +507,286 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NearbyPage'
-  /contents/top:
+  /contents:
     get:
-      summary: Recent guide content (top)
-      security:
-        - bearerAuth: []
+      summary: List guide contents
+      description: Public endpoint; provide Authorization for likedByMe, invalid tokens return 401.
+      security: []
       parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
         - in: query
           name: page
           schema: { type: integer, default: 0 }
         - in: query
           name: pageSize
-          schema: { type: integer, default: 10 }
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
         - in: query
           name: storeId
           required: false
           schema: { type: string, format: uuid }
       responses:
         '200':
-          description: Paged guide content for a store
+          description: Paged guide content
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageResponseGuideTop'
+    post:
+      summary: Create guide content
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentCreateRequest'
+      responses:
+        '200':
+          description: Created content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideTop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Store not found
+
+  /contents/{id}:
+    get:
+      summary: Get content by id
+      description: Public endpoint; provide Authorization for likedByMe, invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Content detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideTop'
+        '404':
+          description: Not found
+    put:
+      summary: Update content
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuideContentUpdateRequest'
+      responses:
+        '200':
+          description: Updated content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideTop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete content
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found
+
+  /contents/{id}/image/upload:
+    post:
+      summary: Get presigned upload slot for content cover
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Upload slot
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /contents/{id}/likes:
+    post:
+      summary: Like content
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Liked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      summary: Unlike content
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Unliked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /contents/{id}/comments:
+    get:
+      summary: List comments for content
+      description: Public endpoint; provide Authorization for personalization, invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Paged comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseGuideContentComment'
+        '404':
+          description: Content not found
+    post:
+      summary: Create comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuideContentCommentRequest'
+      responses:
+        '200':
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideContentComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Content not found
+
+  /contents/{id}/comments/{commentId}:
+    patch:
+      summary: Edit comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: commentId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuideContentCommentRequest'
+      responses:
+        '200':
+          description: Updated comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideContentComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Comment not found
+    delete:
+      summary: Delete comment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: commentId
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Comment not found
 
   /dashboard/stores:
     get:
@@ -488,6 +847,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/PageResponseGuideTop'
 
+  /dashboard/contents/{id}:
+    delete:
+      summary: Delete content (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dashboard/contents/{id}/restore:
+    post:
+      summary: Restore content (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Restored content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideTop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dashboard/comments/{id}:
+    delete:
+      summary: Delete comment (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dashboard/comments/{id}/restore:
+    post:
+      summary: Restore comment (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Restored comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideContentComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /dashboard/users:
     get:
       summary: Admin users list
@@ -519,6 +958,10 @@ paths:
   /categories:
     get:
       summary: List categories
+      description: Public endpoint; invalid tokens return 401.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
       responses:
         '200':
           description: Categories
@@ -531,7 +974,10 @@ paths:
   /categories/{categoryId}/stores:
     get:
       summary: Stores by category (paged)
+      description: Public endpoint; invalid tokens return 401.
+      security: []
       parameters:
+        - $ref: '#/components/parameters/XAppPackageHeader'
         - in: path
           name: categoryId
           required: true
@@ -601,6 +1047,14 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  parameters:
+    XAppPackageHeader:
+      name: X-App-Package
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Required for public GET endpoints (anonymous mode).
   responses:
     Unauthorized:
       description: Unauthorized
@@ -731,6 +1185,66 @@ components:
         images:
           type: array
           items: { $ref: '#/components/schemas/StoreImage' }
+    StoreSocialRequest:
+      type: object
+      description: Include explicit nulls to clear stored social links on update.
+      properties:
+        facebook:
+          type: string
+          nullable: true
+          description: Send null to clear.
+        instagram:
+          type: string
+          nullable: true
+          description: Send null to clear.
+        website:
+          type: string
+          nullable: true
+          description: Send null to clear.
+        whatsapp:
+          type: string
+          nullable: true
+          description: Send null to clear.
+    StoreCreateRequest:
+      type: object
+      required: [name, description, addressLine, phone, latitude, longitude]
+      properties:
+        name: { type: string, maxLength: 120 }
+        description: { type: string, maxLength: 2000 }
+        openingHours: { type: string, maxLength: 256 }
+        addressLine: { type: string, maxLength: 512 }
+        phone: { type: string, maxLength: 32 }
+        email: { type: string, format: email, maxLength: 320 }
+        neighborhood: { type: string, maxLength: 120 }
+        tagline: { type: string, maxLength: 280 }
+        latitude: { type: number, format: double }
+        longitude: { type: number, format: double }
+        categories:
+          type: array
+          maxItems: 10
+          items: { type: string }
+        social:
+          $ref: '#/components/schemas/StoreSocialRequest'
+    StoreUpdateRequest:
+      type: object
+      description: Social fields accept explicit nulls to clear existing values.
+      properties:
+        name: { type: string, maxLength: 120 }
+        description: { type: string, maxLength: 2000 }
+        openingHours: { type: string, maxLength: 256 }
+        addressLine: { type: string, maxLength: 512 }
+        phone: { type: string, maxLength: 32 }
+        email: { type: string, format: email, maxLength: 320 }
+        neighborhood: { type: string, maxLength: 120 }
+        tagline: { type: string, maxLength: 280 }
+        latitude: { type: number, format: double }
+        longitude: { type: number, format: double }
+        categories:
+          type: array
+          maxItems: 10
+          items: { type: string }
+        social:
+          $ref: '#/components/schemas/StoreSocialRequest'
     FeaturedStore:
       type: object
       properties:
@@ -799,7 +1313,39 @@ components:
         imageUrl: { type: string }
         thriftStoreId: { type: string, format: uuid }
         thriftStoreName: { type: string }
+        thriftStoreCoverImageUrl: { type: string }
         createdAt: { type: string, format: date-time }
+        likeCount: { type: integer, format: int64 }
+        commentCount: { type: integer, format: int64 }
+        likedByMe: { type: boolean }
+    GuideContentComment:
+      type: object
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        userId: { type: string, format: uuid }
+        userDisplayName: { type: string }
+        userPhotoUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+        edited: { type: boolean }
+    GuideContentCommentRequest:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, maxLength: 120 }
+    ContentCreateRequest:
+      type: object
+      required: [title, description, storeId]
+      properties:
+        title: { type: string, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        storeId: { type: string, format: uuid }
+    GuideContentUpdateRequest:
+      type: object
+      properties:
+        title: { type: string, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        imageUrl: { type: string }
     HomeResponse:
       type: object
       properties:
@@ -876,6 +1422,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GuideTop'
+        page: { type: integer }
+        hasNext: { type: boolean }
+    PageResponseGuideContentComment:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GuideContentComment'
         page: { type: integer }
         hasNext: { type: boolean }
 
