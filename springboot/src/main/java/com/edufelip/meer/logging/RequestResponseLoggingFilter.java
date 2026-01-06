@@ -51,20 +51,23 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
       long elapsedMs) {
     String method = request.getMethod();
     String uri = request.getRequestURI();
+    boolean skipBody = isSensitivePath(uri);
 
     String reqHeaders = headersToString(Collections.list(request.getHeaderNames()), request);
     String reqBody =
         bodyToString(
             request.getContentAsByteArray(),
             request.getCharacterEncoding(),
-            request.getContentType());
+            request.getContentType(),
+            skipBody);
 
     String resHeaders = headersToString(response.getHeaderNames(), response);
     String resBody =
         bodyToString(
             response.getContentAsByteArray(),
             response.getCharacterEncoding(),
-            response.getContentType());
+            response.getContentType(),
+            skipBody);
 
     log.info(
         "HTTP {} {} | status={} | {} ms\nreqHeaders={}\nreqBody={}\nresHeaders={}\nresBody={}",
@@ -99,7 +102,9 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
     return map.toString();
   }
 
-  private String bodyToString(byte[] content, String encoding, String contentType) {
+  private String bodyToString(
+      byte[] content, String encoding, String contentType, boolean skipBody) {
+    if (skipBody) return "<skipped>";
     if (content == null || content.length == 0) return "<empty>";
     if (contentType != null) {
       // Avoid logging multipart/binary bodies
@@ -114,5 +119,15 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
       body = body + "...<truncated>";
     }
     return body;
+  }
+
+  private boolean isSensitivePath(String path) {
+    if (path == null) return false;
+    String lower = path.toLowerCase(Locale.ROOT);
+    return lower.startsWith("/auth")
+        || lower.startsWith("/profile")
+        || lower.startsWith("/dashboard/login")
+        || lower.startsWith("/support")
+        || lower.startsWith("/uploads");
   }
 }
