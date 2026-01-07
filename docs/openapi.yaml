@@ -848,6 +848,26 @@ paths:
                 $ref: '#/components/schemas/PageResponseGuideTop'
 
   /dashboard/contents/{id}:
+    get:
+      summary: Admin content detail
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Content detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuideTop'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     delete:
       summary: Delete content (admin)
       security:
@@ -887,14 +907,46 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /dashboard/comments/{id}:
-    delete:
-      summary: Delete comment (admin)
+  /dashboard/contents/{id}/comments:
+    get:
+      summary: Admin content comments list
       security:
         - bearerAuth: []
       parameters:
         - in: path
           name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Paged comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseContentComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dashboard/contents/{id}/comments/{commentId}:
+    delete:
+      summary: Delete content comment (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: commentId
           required: true
           schema: { type: integer }
       responses:
@@ -905,23 +957,46 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  /dashboard/comments/{id}/restore:
-    post:
-      summary: Restore comment (admin)
+  /dashboard/comments:
+    get:
+      summary: Admin comments queue
       security:
         - bearerAuth: []
       parameters:
-        - in: path
-          name: id
-          required: true
+        - in: query
+          name: page
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest]
+            default: newest
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: contentId
           schema: { type: integer }
+        - in: query
+          name: storeId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
       responses:
         '200':
-          description: Restored comment
+          description: Paged comments
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GuideContentComment'
+                $ref: '#/components/schemas/PageResponseContentComment'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1041,6 +1116,117 @@ paths:
       responses:
         '204':
           description: Removed
+  /push-tokens:
+    post:
+      summary: Upsert device push token
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushTokenRequest'
+      responses:
+        '204':
+          description: Upserted
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /push-tokens/{deviceId}:
+    delete:
+      summary: Remove device push token
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: deviceId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: environment
+          required: false
+          schema: { type: string, enum: [DEV, STAGING, PROD] }
+      responses:
+        '204':
+          description: Removed
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /dashboard/push:
+    post:
+      summary: Send push to a device token (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushTestRequest'
+      responses:
+        '200':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushMessageIdResponse'
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/push/user:
+    post:
+      summary: Send push to all devices for a user (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushUserNotificationRequest'
+      responses:
+        '200':
+          description: Sent count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSentCountResponse'
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/push/broadcast:
+    post:
+      summary: Broadcast to topic by audience (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushBroadcastRequest'
+      responses:
+        '200':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushMessageIdResponse'
+        '400':
+          description: Invalid request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     bearerAuth:
@@ -1107,6 +1293,44 @@ components:
         authorizationCode: { type: string }
         provider: { type: string, example: apple }
         client: { type: string }
+    PushTokenRequest:
+      type: object
+      required: [deviceId, fcmToken, platform, environment]
+      properties:
+        deviceId: { type: string }
+        fcmToken: { type: string }
+        platform: { type: string, enum: [ANDROID, IOS] }
+        appVersion: { type: string }
+        environment: { type: string, enum: [DEV, STAGING, PROD] }
+    PushTestRequest:
+      type: object
+      required: [token, title, body, type, id]
+      properties:
+        token: { type: string }
+        title: { type: string }
+        body: { type: string }
+        type: { type: string, enum: [guide_content, store] }
+        id: { type: string }
+    PushUserNotificationRequest:
+      type: object
+      required: [userId, environment, title, body, type, id]
+      properties:
+        userId: { type: string, format: uuid }
+        environment: { type: string, enum: [DEV, STAGING, PROD] }
+        title: { type: string }
+        body: { type: string }
+        type: { type: string, enum: [guide_content, store] }
+        id: { type: string }
+    PushBroadcastRequest:
+      type: object
+      required: [environment, audience, title, body, type, id]
+      properties:
+        environment: { type: string, enum: [DEV, STAGING, PROD] }
+        audience: { type: string, enum: [promos, new_stores] }
+        title: { type: string }
+        body: { type: string }
+        type: { type: string, enum: [guide_content, store] }
+        id: { type: string }
     AuthResponse:
       type: object
       properties:
@@ -1114,6 +1338,14 @@ components:
         refreshToken: { type: string }
         user:
           $ref: '#/components/schemas/Profile'
+    PushMessageIdResponse:
+      type: object
+      properties:
+        messageId: { type: string }
+    PushSentCountResponse:
+      type: object
+      properties:
+        sent: { type: integer }
     Profile:
       type: object
       properties:
@@ -1328,6 +1560,20 @@ components:
         userPhotoUrl: { type: string }
         createdAt: { type: string, format: date-time }
         edited: { type: boolean }
+    ContentComment:
+      type: object
+      properties:
+        id: { type: integer }
+        body: { type: string }
+        userId: { type: string, format: uuid }
+        userDisplayName: { type: string }
+        userPhotoUrl: { type: string }
+        contentId: { type: integer }
+        contentTitle: { type: string }
+        thriftStoreId: { type: string, format: uuid }
+        thriftStoreName: { type: string }
+        createdAt: { type: string, format: date-time }
+        edited: { type: boolean }
     GuideContentCommentRequest:
       type: object
       required: [body]
@@ -1431,6 +1677,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GuideContentComment'
+        page: { type: integer }
+        hasNext: { type: boolean }
+    PageResponseContentComment:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentComment'
         page: { type: integer }
         hasNext: { type: boolean }
 
