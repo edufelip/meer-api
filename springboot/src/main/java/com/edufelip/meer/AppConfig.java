@@ -7,7 +7,9 @@ import com.edufelip.meer.domain.GetGuideContentUseCase;
 import com.edufelip.meer.domain.GetGuideContentsByThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
+import com.edufelip.meer.domain.UpsertPushTokenUseCase;
 import com.edufelip.meer.domain.UpdateGuideContentCommentUseCase;
+import com.edufelip.meer.domain.DeletePushTokenUseCase;
 import com.edufelip.meer.domain.auth.AppleLoginUseCase;
 import com.edufelip.meer.domain.auth.DashboardLoginUseCase;
 import com.edufelip.meer.domain.auth.ForgotPasswordUseCase;
@@ -23,8 +25,10 @@ import com.edufelip.meer.domain.repo.AuthUserRepository;
 import com.edufelip.meer.domain.repo.GuideContentCommentRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.PasswordResetTokenRepository;
+import com.edufelip.meer.domain.repo.PushTokenRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.logging.RequestResponseLoggingFilter;
+import com.edufelip.meer.config.FirebaseProperties;
 import com.edufelip.meer.security.DashboardAdminGuardFilter;
 import com.edufelip.meer.security.GoogleClientProperties;
 import com.edufelip.meer.security.JwtProperties;
@@ -49,7 +53,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
   SecurityProperties.class,
   JwtProperties.class,
   GoogleClientProperties.class,
-  PasswordResetProperties.class
+  PasswordResetProperties.class,
+  FirebaseProperties.class
 })
 public class AppConfig {
 
@@ -173,6 +178,17 @@ public class AppConfig {
   public UpdateProfileUseCase updateProfileUseCase(
       TokenProvider tokenProvider, AuthUserRepository repo) {
     return new UpdateProfileUseCase(tokenProvider, repo);
+  }
+
+  @Bean
+  public UpsertPushTokenUseCase upsertPushTokenUseCase(
+      PushTokenRepository pushTokenRepository, Clock clock) {
+    return new UpsertPushTokenUseCase(pushTokenRepository, clock);
+  }
+
+  @Bean
+  public DeletePushTokenUseCase deletePushTokenUseCase(PushTokenRepository pushTokenRepository) {
+    return new DeletePushTokenUseCase(pushTokenRepository);
   }
 
   @Bean
