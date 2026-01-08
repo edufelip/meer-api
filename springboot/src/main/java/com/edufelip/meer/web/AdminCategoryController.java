@@ -3,6 +3,9 @@ package com.edufelip.meer.web;
 import com.edufelip.meer.core.auth.AuthUser;
 import com.edufelip.meer.core.auth.Role;
 import com.edufelip.meer.core.category.Category;
+import com.edufelip.meer.domain.CreateCategoryUseCase;
+import com.edufelip.meer.domain.DeleteCategoryUseCase;
+import com.edufelip.meer.domain.UpdateCategoryUseCase;
 import com.edufelip.meer.domain.repo.CategoryRepository;
 import com.edufelip.meer.dto.CategoryDto;
 import com.edufelip.meer.dto.CategoryUpsertRequest;
@@ -21,9 +24,19 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminCategoryController {
 
   private final CategoryRepository categoryRepository;
+  private final CreateCategoryUseCase createCategoryUseCase;
+  private final UpdateCategoryUseCase updateCategoryUseCase;
+  private final DeleteCategoryUseCase deleteCategoryUseCase;
 
-  public AdminCategoryController(CategoryRepository categoryRepository) {
+  public AdminCategoryController(
+      CategoryRepository categoryRepository,
+      CreateCategoryUseCase createCategoryUseCase,
+      UpdateCategoryUseCase updateCategoryUseCase,
+      DeleteCategoryUseCase deleteCategoryUseCase) {
     this.categoryRepository = categoryRepository;
+    this.createCategoryUseCase = createCategoryUseCase;
+    this.updateCategoryUseCase = updateCategoryUseCase;
+    this.deleteCategoryUseCase = deleteCategoryUseCase;
   }
 
   @GetMapping
@@ -57,7 +70,7 @@ public class AdminCategoryController {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Category already exists");
     }
     Category category = new Category(body.id(), body.nameStringId(), body.imageResId());
-    Category saved = categoryRepository.save(category);
+    Category saved = createCategoryUseCase.execute(category);
     return new CategoryDto(
         saved.getId(), saved.getNameStringId(), saved.getImageResId(), saved.getCreatedAt());
   }
@@ -76,7 +89,7 @@ public class AdminCategoryController {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
     category.setNameStringId(body.nameStringId());
     category.setImageResId(body.imageResId());
-    Category saved = categoryRepository.save(category);
+    Category saved = updateCategoryUseCase.execute(category);
     return new CategoryDto(
         saved.getId(), saved.getNameStringId(), saved.getImageResId(), saved.getCreatedAt());
   }
@@ -88,7 +101,7 @@ public class AdminCategoryController {
     if (!categoryRepository.existsById(id)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
     }
-    categoryRepository.deleteById(id);
+    deleteCategoryUseCase.execute(id);
     return org.springframework.http.ResponseEntity.noContent().build();
   }
 

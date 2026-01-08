@@ -1,13 +1,17 @@
 package com.edufelip.meer;
 
+import com.edufelip.meer.domain.CreateCategoryUseCase;
 import com.edufelip.meer.domain.CreateGuideContentCommentUseCase;
 import com.edufelip.meer.domain.CreateGuideContentUseCase;
 import com.edufelip.meer.domain.CreateThriftStoreUseCase;
+import com.edufelip.meer.domain.DeleteCategoryUseCase;
+import com.edufelip.meer.domain.GetCategoriesUseCase;
 import com.edufelip.meer.domain.GetGuideContentUseCase;
 import com.edufelip.meer.domain.GetGuideContentsByThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoreUseCase;
 import com.edufelip.meer.domain.GetThriftStoresUseCase;
 import com.edufelip.meer.domain.UpsertPushTokenUseCase;
+import com.edufelip.meer.domain.UpdateCategoryUseCase;
 import com.edufelip.meer.domain.UpdateGuideContentCommentUseCase;
 import com.edufelip.meer.domain.DeletePushTokenUseCase;
 import com.edufelip.meer.domain.auth.AppleLoginUseCase;
@@ -22,6 +26,7 @@ import com.edufelip.meer.domain.auth.ResetPasswordUseCase;
 import com.edufelip.meer.domain.auth.SignupUseCase;
 import com.edufelip.meer.domain.auth.UpdateProfileUseCase;
 import com.edufelip.meer.domain.repo.AuthUserRepository;
+import com.edufelip.meer.domain.repo.CategoryRepository;
 import com.edufelip.meer.domain.repo.GuideContentCommentRepository;
 import com.edufelip.meer.domain.repo.GuideContentRepository;
 import com.edufelip.meer.domain.repo.PasswordResetTokenRepository;
@@ -76,6 +81,26 @@ public class AppConfig {
   @Bean
   public CreateThriftStoreUseCase createThriftStoreUseCase(ThriftStoreRepository repo) {
     return new CreateThriftStoreUseCase(repo);
+  }
+
+  @Bean
+  public GetCategoriesUseCase getCategoriesUseCase(CategoryRepository repo) {
+    return new GetCategoriesUseCase(repo);
+  }
+
+  @Bean
+  public CreateCategoryUseCase createCategoryUseCase(CategoryRepository repo) {
+    return new CreateCategoryUseCase(repo);
+  }
+
+  @Bean
+  public UpdateCategoryUseCase updateCategoryUseCase(CategoryRepository repo) {
+    return new UpdateCategoryUseCase(repo);
+  }
+
+  @Bean
+  public DeleteCategoryUseCase deleteCategoryUseCase(CategoryRepository repo) {
+    return new DeleteCategoryUseCase(repo);
   }
 
   @Bean

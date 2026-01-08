@@ -1,5 +1,6 @@
 package com.edufelip.meer.web;
 
+import com.edufelip.meer.domain.GetCategoriesUseCase;
 import com.edufelip.meer.domain.repo.CategoryRepository;
 import com.edufelip.meer.domain.repo.ThriftStoreRepository;
 import com.edufelip.meer.dto.CategoryDto;
@@ -7,7 +8,6 @@ import com.edufelip.meer.dto.CategoryStoreItemDto;
 import com.edufelip.meer.dto.PageResponse;
 import com.edufelip.meer.mapper.Mappers;
 import java.util.List;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,17 +23,20 @@ public class CategoryController {
 
   private final CategoryRepository categoryRepository;
   private final ThriftStoreRepository thriftStoreRepository;
+  private final GetCategoriesUseCase getCategoriesUseCase;
 
   public CategoryController(
-      CategoryRepository categoryRepository, ThriftStoreRepository thriftStoreRepository) {
+      CategoryRepository categoryRepository,
+      ThriftStoreRepository thriftStoreRepository,
+      GetCategoriesUseCase getCategoriesUseCase) {
     this.categoryRepository = categoryRepository;
     this.thriftStoreRepository = thriftStoreRepository;
+    this.getCategoriesUseCase = getCategoriesUseCase;
   }
 
   @GetMapping
-  @Cacheable("categoriesAll")
   public List<CategoryDto> getAll() {
-    return categoryRepository.findAll().stream().map(Mappers::toDto).toList();
+    return getCategoriesUseCase.executeAll().stream().map(Mappers::toDto).toList();
   }
 
   @GetMapping("/{categoryId}/stores")
