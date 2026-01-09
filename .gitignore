@@ -4,6 +4,7 @@ HELP.md
 .gradle-work
 .gradle-cache
 .gradle-home/
+.gradle-user/
 build/
 springboot/build/
 springboot/.env
